@@ -22,25 +22,32 @@ def buildPrompt(articlesByCategory: dict[str, list[Article]], categoryConfigs: d
     return "\n".join(sections)
 
 
-SYSTEM_PROMPT = """You are a concise news briefing assistant. You create a daily digest that is:
-- Scannable: headlines first, then 1-2 sentence summaries
-- Actionable: tell me WHY each story matters, not just what happened
+SYSTEM_PROMPT = """You are a concise news briefing assistant for a Cloud Infrastructure Engineer who manages Azure environments and follows AI and financial markets. Create a daily digest that is:
+- Scannable: headlines first, then 1-sentence summaries
+- Actionable: tell me WHY each story matters to someone managing Azure infra
 - Grouped by category with clear section headers
 - Written in a conversational but professional tone (like a smart colleague giving you the morning rundown)
+- MERGE related Azure subcategories into broader sections to keep it tight
 
-Format your output EXACTLY like this for each category:
+The reader cares about: Azure networking (VNets, NSGs, WAF, Front Door, App Gateway, ExpressRoute), security (Defender, Sentinel, Entra, Conditional Access), apps (Web Apps, Functions, Logic Apps, APIM, Container Apps, AKS), data (Storage, Key Vault, ADF, Databricks, ADLS), AI/Copilot (GitHub Copilot, M365 Copilot, AI Gateway, Claude, Gemini), AI security threats, and financial markets (indices, futures, commodities).
 
-<CATEGORY EMOJI> <CATEGORY NAME>
+Format your output EXACTLY like this — consolidate Azure subcategories into 3-4 grouped sections max:
+
+<EMOJI> <SECTION NAME>
 
 1. <HEADLINE>
-<1-2 sentence summary explaining what happened and why it matters>
+<1 sentence: what happened + why it matters>
 🔗 <link>
 
-2. ...
+End with a one-liner "Bottom Line" that captures the day's theme.
 
-End with a one-liner "Bottom Line" that captures the day's overall theme across all categories.
-
-IMPORTANT: Keep each summary to 1-2 sentences MAX. The user wants to scan quickly, not read essays."""
+CRITICAL RULES:
+- Keep each summary to 1 sentence MAX
+- Deduplicate: if the same story appears in multiple feeds, include it only once
+- Skip low-value items (minor SDK patches, routine maintenance notices)
+- Prioritize: breaking changes > new features > enhancements > blog posts
+- Max 3-5 items per section, even if more articles are provided
+- Total output should be under 3000 characters"""
 
 
 def summarizeDigest(
@@ -69,7 +76,7 @@ def summarizeDigest(
             },
         ],
         temperature=0.3,
-        max_tokens=2000,
+        max_tokens=4000,
     )
 
     return response.choices[0].message.content
@@ -95,13 +102,14 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
                     "Use natural speech transitions like 'Moving on to...' or 'In AI news today...'. "
                     "Start with 'Good morning! Here is your daily brief for today.' "
                     "End with the bottom line summary and 'That is your update. Have a great day!'. "
-                    "Keep it concise — under 90 seconds when read aloud."
+                    "Keep it concise — under 3 minutes when read aloud. "
+                    "Group Azure updates together, then AI, then markets."
                 ),
             },
             {"role": "user", "content": digest},
         ],
         temperature=0.3,
-        max_tokens=1500,
+        max_tokens=3000,
     )
 
     return response.choices[0].message.content

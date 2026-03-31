@@ -1,51 +1,179 @@
 # DailyUpdates Configuration
-# Add/remove feeds and categories as needed
+# Comprehensive feeds for Azure infra, AI/Copilot, Security, and Markets
 
 settings:
-  articles_per_category: 3
+  articles_per_category: 5
   timezone: "US/Eastern"
   schedule_hour: 7  # 7am EST
-  # Groq model for summarization (free tier)
   llm_model: "llama-3.3-70b-versatile"
-  # edge-tts voice (Microsoft neural voice, free)
   tts_voice: "en-US-GuyNeural"
-  # Max article age in hours (skip older articles)
   max_age_hours: 48
 
+# --- Categories ---
+# Each category pulls from multiple feeds, AI picks the top N most relevant
+
 categories:
-  azure:
-    name: "Azure Updates"
+
+  # ============================================================
+  # AZURE INFRASTRUCTURE & PLATFORM
+  # ============================================================
+  azure_networking:
+    name: "Azure Networking"
+    emoji: "\U0001f310"
+    feeds:
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureNetworkingBlog"
+        name: "Azure Networking Blog"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureNetworkSecurityBlog"
+        name: "Azure Network Security"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureFrontDoorBlog"
+        name: "Azure Front Door"
+
+  azure_security:
+    name: "Azure Security & Identity"
+    emoji: "\U0001f6e1\ufe0f"
+    feeds:
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftSentinelBlog"
+        name: "Microsoft Sentinel"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftDefenderCloudBlog"
+        name: "Defender for Cloud"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftEntraBlog"
+        name: "Microsoft Entra"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=CoreInfrastructureandSecurityBlog"
+        name: "Core Infra & Security"
+      - url: "https://www.microsoft.com/en-us/security/blog/feed/"
+        name: "Microsoft Security Blog"
+
+  azure_apps:
+    name: "Azure Apps & Serverless"
+    emoji: "\u2699\ufe0f"
+    feeds:
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=ApponAzureBlog"
+        name: "Apps on Azure"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureWebAppsBlog"
+        name: "Azure Web Apps"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureFunctionsBlog"
+        name: "Azure Functions"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureLogicAppsBlog"
+        name: "Azure Logic Apps"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=APIManagementBlog"
+        name: "Azure APIM"
+
+  azure_containers:
+    name: "Azure Containers & AKS"
+    emoji: "\U0001f4e6"
+    feeds:
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AKSBlog"
+        name: "AKS Blog"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureContainersBlog"
+        name: "Azure Containers"
+      - url: "https://github.com/Azure/AKS/releases.atom"
+        name: "AKS GitHub Releases"
+
+  azure_data:
+    name: "Azure Data & Storage"
+    emoji: "\U0001f4be"
+    feeds:
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureStorageBlog"
+        name: "Azure Storage"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureDataFactoryBlog"
+        name: "Azure Data Factory"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureDatabricksBlog"
+        name: "Azure Databricks"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureSynapseBlog"
+        name: "Azure Synapse"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=KeyVaultBlog"
+        name: "Key Vault"
+
+  azure_updates:
+    name: "Azure Platform Updates"
     emoji: "\u2601\ufe0f"
     feeds:
+      - url: "https://www.microsoft.com/releasecommunications/api/v2/azure/rss"
+        name: "Azure Release Communications"
       - url: "https://azure.microsoft.com/en-us/blog/feed/"
         name: "Azure Blog"
       - url: "https://devblogs.microsoft.com/azure-sdk/feed/"
         name: "Azure SDK Blog"
-      - url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
-        name: "Azure Updates"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureGovernanceBlog"
+        name: "Azure Governance"
 
-  ai:
-    name: "AI Updates"
+  # ============================================================
+  # AI, COPILOT & AI SECURITY
+  # ============================================================
+  ai_copilot:
+    name: "AI & Copilot"
     emoji: "\U0001f916"
     feeds:
+      - url: "https://github.blog/changelog/label/copilot/feed/"
+        name: "GitHub Copilot Changelog"
+      - url: "https://github.blog/feed/"
+        name: "GitHub Blog"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Microsoft365CopilotBlog"
+        name: "M365 Copilot"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AIBlog"
+        name: "Microsoft AI Blog"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=APIManagementBlog"
+        name: "APIM / AI Gateway"
+
+  ai_industry:
+    name: "AI Industry News"
+    emoji: "\U0001f4a1"
+    feeds:
+      - url: "https://openai.com/news/rss.xml"
+        name: "OpenAI News"
+      - url: "https://blog.google/products-and-platforms/products/gemini/rss/"
+        name: "Google Gemini"
       - url: "https://blog.google/technology/ai/rss/"
         name: "Google AI Blog"
-      - url: "https://openai.com/blog/rss.xml"
-        name: "OpenAI Blog"
       - url: "https://www.marktechpost.com/feed/"
         name: "MarkTechPost"
       - url: "https://techcrunch.com/category/artificial-intelligence/feed/"
         name: "TechCrunch AI"
 
-  stocks:
-    name: "Stock Market Updates"
+  ai_security:
+    name: "AI Security & Threats"
+    emoji: "\U0001f6a8"
+    feeds:
+      - url: "https://www.microsoft.com/en-us/security/blog/feed/"
+        name: "Microsoft Security Blog"
+      - url: "https://feeds.feedburner.com/GoogleOnlineSecurityBlog"
+        name: "Google Security Blog"
+      - url: "https://www.bleepingcomputer.com/feed/"
+        name: "BleepingComputer"
+      - url: "https://feeds.feedburner.com/TheHackersNews"
+        name: "The Hacker News"
+      - url: "https://krebsonsecurity.com/feed/"
+        name: "Krebs on Security"
+
+  # ============================================================
+  # MARKETS & FINANCE
+  # ============================================================
+  markets_news:
+    name: "Market News & Indices"
     emoji: "\U0001f4c8"
     feeds:
-      - url: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US"
-        name: "Yahoo Finance S&P 500"
+      - url: "https://www.investing.com/rss/news_25.rss"
+        name: "Investing.com Stocks"
+      - url: "https://www.investing.com/rss/stock_Indices.rss"
+        name: "Investing.com Indices Analysis"
       - url: "https://www.investing.com/rss/news.rss"
-        name: "Investing.com"
-      - url: "https://feeds.bloomberg.com/markets/news.rss"
-        name: "Bloomberg Markets"
+        name: "Investing.com All News"
+      - url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+        name: "MarketWatch Top Stories"
       - url: "https://seekingalpha.com/market_currents.xml"
         name: "Seeking Alpha"
+
+  markets_commodities:
+    name: "Futures & Commodities"
+    emoji: "\U0001f6e2\ufe0f"
+    feeds:
+      - url: "https://www.investing.com/rss/stock_Futures.rss"
+        name: "Investing.com Futures"
+      - url: "https://www.investing.com/rss/commodities_Energy.rss"
+        name: "Investing.com Energy"
+      - url: "https://www.investing.com/rss/commodities_Metals.rss"
+        name: "Investing.com Metals"
+      - url: "https://www.investing.com/rss/news_14.rss"
+        name: "Investing.com Economy"
+      - url: "https://www.investing.com/rss/290.rss"
+        name: "Investing.com Editor's Picks"
