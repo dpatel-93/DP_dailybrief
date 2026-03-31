@@ -177,3 +177,59 @@ categories:
         name: "Investing.com Economy"
       - url: "https://www.investing.com/rss/290.rss"
         name: "Investing.com Editor's Picks"
+
+  # ============================================================
+  # NEWS & WORLD AFFAIRS
+  # ============================================================
+  news_national:
+    name: "US & Breaking News"
+    emoji: "\U0001f1fa\U0001f1f8"
+    feeds:
+      - url: "https://feeds.npr.org/1001/rss.xml"
+        name: "NPR Top Stories"
+      - url: "https://feeds.npr.org/1014/rss.xml"
+        name: "NPR Politics"
+      - url: "https://www.pbs.org/newshour/feeds/rss/headlines"
+        name: "PBS NewsHour"
+
+  news_world:
+    name: "World News"
+    emoji: "\U0001f30d"
+    feeds:
+      - url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+        name: "BBC World"
+      - url: "https://feeds.bbci.co.uk/news/rss.xml"
+        name: "BBC Top Stories"
+      - url: "https://www.aljazeera.com/xml/rss/all.xml"
+        name: "Al Jazeera"
+      - url: "https://feeds.npr.org/1004/rss.xml"
+        name: "NPR World"
+
+  # ============================================================
+  # HEALTH, SAFETY & RECALLS
+  # ============================================================
+  health_alerts:
+    name: "Health & Safety Alerts"
+    emoji: "\U0001f3e5"
+    feeds:
+      - url: "https://tools.cdc.gov/api/v2/resources/media/132608.rss"
+        name: "CDC Newsroom"
+      - url: "https://tools.cdc.gov/api/v2/resources/media/285676.rss"
+        name: "CDC Outbreaks"
+      - url: "https://tools.cdc.gov/api/v2/resources/media/316737.rss"
+        name: "CDC Kids Health"
+      - url: "https://feeds.npr.org/1128/rss.xml"
+        name: "NPR Health"
+
+  health_recalls:
+    name: "Product & Food Recalls"
+    emoji: "\u26a0\ufe0f"
+    feeds:
+      - url: "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS"
+        name: "CPSC All Recalls"
+      - url: "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS/children"
+        name: "CPSC Children's Recalls"
+      - url: "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/food-safety-recalls/rss.xml"
+        name: "FDA Food Recalls"
+      - url: "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml"
+        name: "FDA MedWatch Alerts"

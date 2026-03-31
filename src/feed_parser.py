@@ -19,7 +19,10 @@ class Article:
 
 def fetchFeed(url: str, timeout: int = 15) -> feedparser.FeedParserDict:
     """Fetch RSS feed with a proper User-Agent to avoid 403s."""
-    headers = {"User-Agent": "DailyUpdates/1.0 (RSS Aggregator)"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    }
     try:
         resp = httpx.get(url, headers=headers, timeout=timeout, follow_redirects=True)
         resp.raise_for_status()
