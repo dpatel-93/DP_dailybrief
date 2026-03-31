@@ -6,7 +6,7 @@ settings:
   timezone: "US/Eastern"
   schedule_hour: 7  # 7am EST
   llm_model: "llama-3.3-70b-versatile"
-  tts_voice: "en-US-GuyNeural"
+  tts_voice: "en-GB-RyanNeural"
   max_age_hours: 48
 
 # --- Categories ---
