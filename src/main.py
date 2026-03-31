@@ -78,12 +78,16 @@ def run():
     else:
         print(f"  [ERROR] Text send failed: {result}")
 
-    # Send command tips
+    # Send command instructions
     tips = (
-        "\U0001f4cb /list — See all articles by number\n"
-        "\U0001f4be /save 3 — Save article #3 to Obsidian\n"
-        "\U0001f50d /research 3 — Deep research + save\n"
-        "\U0001f4be /save all — Save full digest"
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n"
+        "\U0001f3a7 Audio version is below\n\n"
+        "Commands:\n"
+        "/list — See all articles by number\n"
+        "/save <number> — Save article to Obsidian\n"
+        "/research <number> — AI deep-dive + save\n"
+        "/save all — Save full digest to Obsidian\n"
+        "/brief — Request a new update anytime"
     )
     sendMessage(tips, parseMode="Markdown")
 
