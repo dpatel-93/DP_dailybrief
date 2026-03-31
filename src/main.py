@@ -15,6 +15,7 @@ from src.feed_parser import fetchAllFeeds
 from src.summarizer import summarizeDigest, makeSpokenVersion
 from src.tts import generateAudio
 from src.telegram import sendMessage, sendAudio
+from src.vault import saveDigestArticles
 
 
 def loadConfig(configPath: str = None) -> dict:
@@ -49,6 +50,10 @@ def run():
         sendMessage("No new updates today. Quiet day! \U0001f60e")
         return
 
+    # --- Save article index (for /save and /research commands) ---
+    print("\n  Saving article index for /save and /research commands...")
+    saveDigestArticles(articlesByCategory, categories)
+
     # --- Step 2: AI Summarization ---
     print("\n[Step 2/4] Generating AI summary...")
     model = settings.get("llm_model", "llama-3.3-70b-versatile")
@@ -72,6 +77,15 @@ def run():
         print("  Text message sent!")
     else:
         print(f"  [ERROR] Text send failed: {result}")
+
+    # Send command tips
+    tips = (
+        "\U0001f4cb /list — See all articles by number\n"
+        "\U0001f4be /save 3 — Save article #3 to Obsidian\n"
+        "\U0001f50d /research 3 — Deep research + save\n"
+        "\U0001f4be /save all — Save full digest"
+    )
+    sendMessage(tips, parseMode="Markdown")
 
     # Send the audio file
     audioResult = sendAudio(audioPath, caption=f"\U0001f3a7 Listen to today's brief ({datetime.now().strftime('%b %d')})")

@@ -8,3 +8,4 @@ venv/
 dist/
 build/
 .claude/
+data/last_digest.json

@@ -1,6 +1,7 @@
-"""Telegram bot command handler — checks for /brief commands and triggers the digest."""
+"""Telegram bot command handler — checks for commands and dispatches actions."""
 
 import os
+import re
 import time
 import httpx
 
@@ -10,12 +11,16 @@ TELEGRAM_API = "https://api.telegram.org/bot{token}"
 MAX_MESSAGE_AGE_SECONDS = 1800  # 30 minutes (matches the polling interval)
 
 
-def checkForCommands() -> list[dict]:
-    """Poll Telegram for recent /brief commands. Stateless — uses message timestamps."""
+def checkForCommands() -> dict:
+    """Poll Telegram for recent commands. Returns categorized commands.
+
+    Returns dict with keys: 'brief', 'save', 'research', 'list'
+    Each value is a list of command details.
+    """
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chatId = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chatId:
-        return []
+        return {"brief": [], "save": [], "research": [], "list": []}
 
     baseUrl = TELEGRAM_API.format(token=token)
     cutoff = time.time() - MAX_MESSAGE_AGE_SECONDS
@@ -29,12 +34,12 @@ def checkForCommands() -> list[dict]:
         data = resp.json()
     except Exception as e:
         print(f"  [WARN] Failed to poll Telegram: {e}")
-        return []
+        return {"brief": [], "save": [], "research": [], "list": []}
 
     if not data.get("ok"):
-        return []
+        return {"brief": [], "save": [], "research": [], "list": []}
 
-    commands = []
+    result = {"brief": [], "save": [], "research": [], "list": []}
     maxUpdateId = 0
 
     for update in data.get("result", []):
@@ -42,23 +47,42 @@ def checkForCommands() -> list[dict]:
         maxUpdateId = max(maxUpdateId, updateId)
 
         msg = update.get("message", {})
-        text = msg.get("text", "").strip().lower()
+        text = msg.get("text", "").strip()
+        textLower = text.lower()
         msgTime = msg.get("date", 0)
         msgChatId = str(msg.get("chat", {}).get("id", ""))
 
-        # Only respond to commands from the authorized chat
         if msgChatId != str(chatId):
             continue
-
-        # Skip old messages (before our polling window)
         if msgTime < cutoff:
             continue
 
-        if text in ["/brief", "/update", "brief", "update"]:
-            commands.append(msg)
-            print(f"  Found command: '{text}' at {msgTime}")
+        # Parse commands
+        if textLower in ["/brief", "/update", "brief", "update"]:
+            result["brief"].append(msg)
+            print(f"  Found command: '{textLower}' at {msgTime}")
 
-    # Acknowledge all processed updates so they don't show up again
+        elif textLower.startswith("/save") or textLower.startswith("save"):
+            nums = re.findall(r"\d+", text)
+            if textLower.endswith("all"):
+                result["save"].append({"type": "all"})
+                print(f"  Found command: save all at {msgTime}")
+            elif nums:
+                for n in nums:
+                    result["save"].append({"type": "single", "index": int(n)})
+                    print(f"  Found command: save {n} at {msgTime}")
+
+        elif textLower.startswith("/research") or textLower.startswith("research"):
+            nums = re.findall(r"\d+", text)
+            for n in nums:
+                result["research"].append({"index": int(n)})
+                print(f"  Found command: research {n} at {msgTime}")
+
+        elif textLower in ["/list", "/saved", "list saved"]:
+            result["list"].append(msg)
+            print(f"  Found command: list at {msgTime}")
+
+    # Acknowledge all processed updates
     if maxUpdateId:
         try:
             httpx.get(
@@ -69,19 +93,20 @@ def checkForCommands() -> list[dict]:
         except Exception:
             pass
 
-    if commands:
-        _sendReply(token, chatId, "Got it! Generating your brief now... \u23f3")
-
-    return commands
+    return result
 
 
-def _sendReply(token: str, chatId: str, text: str):
-    """Send a quick reply to the user."""
+def sendReply(text: str):
+    """Send a reply to the configured Telegram chat."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chatId = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chatId:
+        return
     baseUrl = TELEGRAM_API.format(token=token)
     try:
         httpx.post(
             f"{baseUrl}/sendMessage",
-            json={"chat_id": chatId, "text": text},
+            json={"chat_id": chatId, "text": text, "disable_web_page_preview": True},
             timeout=10,
         )
     except Exception:
