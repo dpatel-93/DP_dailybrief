@@ -1,31 +1,31 @@
 """Telegram bot command handler — checks for /brief commands and triggers the digest."""
 
 import os
-import json
+import time
 import httpx
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}"
-OFFSET_FILE = "/tmp/telegram_offset.txt"
+
+# Only process messages from the last N seconds (stateless — no offset persistence needed)
+MAX_MESSAGE_AGE_SECONDS = 1800  # 30 minutes (matches the polling interval)
 
 
 def checkForCommands() -> list[dict]:
-    """Poll Telegram for new /brief commands. Returns list of command messages."""
+    """Poll Telegram for recent /brief commands. Stateless — uses message timestamps."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chatId = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chatId:
         return []
 
     baseUrl = TELEGRAM_API.format(token=token)
-
-    # Read last processed update offset (so we don't re-process old messages)
-    offset = _loadOffset()
-
-    params = {"timeout": 5, "allowed_updates": '["message"]'}
-    if offset:
-        params["offset"] = offset
+    cutoff = time.time() - MAX_MESSAGE_AGE_SECONDS
 
     try:
-        resp = httpx.get(f"{baseUrl}/getUpdates", params=params, timeout=15)
+        resp = httpx.get(
+            f"{baseUrl}/getUpdates",
+            params={"timeout": 5, "allowed_updates": '["message"]'},
+            timeout=15,
+        )
         data = resp.json()
     except Exception as e:
         print(f"  [WARN] Failed to poll Telegram: {e}")
@@ -35,7 +35,7 @@ def checkForCommands() -> list[dict]:
         return []
 
     commands = []
-    maxUpdateId = offset or 0
+    maxUpdateId = 0
 
     for update in data.get("result", []):
         updateId = update.get("update_id", 0)
@@ -43,19 +43,34 @@ def checkForCommands() -> list[dict]:
 
         msg = update.get("message", {})
         text = msg.get("text", "").strip().lower()
+        msgTime = msg.get("date", 0)
         msgChatId = str(msg.get("chat", {}).get("id", ""))
 
         # Only respond to commands from the authorized chat
         if msgChatId != str(chatId):
             continue
 
+        # Skip old messages (before our polling window)
+        if msgTime < cutoff:
+            continue
+
         if text in ["/brief", "/update", "brief", "update"]:
             commands.append(msg)
-            _sendReply(token, chatId, "Got it! Generating your brief now... ⏳")
+            print(f"  Found command: '{text}' at {msgTime}")
 
-    # Save offset so we don't reprocess these messages
+    # Acknowledge all processed updates so they don't show up again
     if maxUpdateId:
-        _saveOffset(maxUpdateId + 1)
+        try:
+            httpx.get(
+                f"{baseUrl}/getUpdates",
+                params={"offset": maxUpdateId + 1, "timeout": 1},
+                timeout=10,
+            )
+        except Exception:
+            pass
+
+    if commands:
+        _sendReply(token, chatId, "Got it! Generating your brief now... \u23f3")
 
     return commands
 
@@ -71,29 +86,3 @@ def _sendReply(token: str, chatId: str, text: str):
         )
     except Exception:
         pass
-
-
-def _loadOffset() -> int | None:
-    """Load the last processed Telegram update offset."""
-    # Try environment variable first (for GitHub Actions, passed between runs)
-    envOffset = os.environ.get("TELEGRAM_OFFSET")
-    if envOffset:
-        return int(envOffset)
-
-    # Try file (for local runs)
-    try:
-        with open(OFFSET_FILE, "r") as f:
-            return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
-        return None
-
-
-def _saveOffset(offset: int):
-    """Save the update offset for next poll."""
-    try:
-        with open(OFFSET_FILE, "w") as f:
-            f.write(str(offset))
-    except Exception:
-        pass
-    # Also print it so GitHub Actions can capture it
-    print(f"TELEGRAM_OFFSET={offset}")
