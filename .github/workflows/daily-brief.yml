@@ -2,9 +2,9 @@ name: Daily Brief
 
 on:
   schedule:
-    # 7am EST = 12:00 UTC (EDT) or 12:00 UTC (EST)
-    # Using 11:00 UTC to account for daylight saving — adjust as needed
-    - cron: "0 11 * * *"
+    # 8am EST = 13:00 UTC (or 12:00 UTC during EDT)
+    # Using 12:00 UTC for EDT (current daylight saving)
+    - cron: "0 12 * * *"
 
   # Ad-hoc trigger — run manually from GitHub Actions tab
   workflow_dispatch:

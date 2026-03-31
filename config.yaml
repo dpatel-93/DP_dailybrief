@@ -4,7 +4,7 @@
 settings:
   articles_per_category: 5
   timezone: "US/Eastern"
-  schedule_hour: 7  # 7am EST
+  schedule_hour: 8  # 8am EST
   llm_model: "llama-3.3-70b-versatile"
   tts_voice: "en-GB-RyanNeural"
   max_age_hours: 48
