@@ -1,0 +1,51 @@
+# DailyUpdates Configuration
+# Add/remove feeds and categories as needed
+
+settings:
+  articles_per_category: 3
+  timezone: "US/Eastern"
+  schedule_hour: 7  # 7am EST
+  # Groq model for summarization (free tier)
+  llm_model: "llama-3.3-70b-versatile"
+  # edge-tts voice (Microsoft neural voice, free)
+  tts_voice: "en-US-GuyNeural"
+  # Max article age in hours (skip older articles)
+  max_age_hours: 48
+
+categories:
+  azure:
+    name: "Azure Updates"
+    emoji: "\u2601\ufe0f"
+    feeds:
+      - url: "https://azure.microsoft.com/en-us/blog/feed/"
+        name: "Azure Blog"
+      - url: "https://devblogs.microsoft.com/azure-sdk/feed/"
+        name: "Azure SDK Blog"
+      - url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
+        name: "Azure Updates"
+
+  ai:
+    name: "AI Updates"
+    emoji: "\U0001f916"
+    feeds:
+      - url: "https://blog.google/technology/ai/rss/"
+        name: "Google AI Blog"
+      - url: "https://openai.com/blog/rss.xml"
+        name: "OpenAI Blog"
+      - url: "https://www.marktechpost.com/feed/"
+        name: "MarkTechPost"
+      - url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+        name: "TechCrunch AI"
+
+  stocks:
+    name: "Stock Market Updates"
+    emoji: "\U0001f4c8"
+    feeds:
+      - url: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US"
+        name: "Yahoo Finance S&P 500"
+      - url: "https://www.investing.com/rss/news.rss"
+        name: "Investing.com"
+      - url: "https://feeds.bloomberg.com/markets/news.rss"
+        name: "Bloomberg Markets"
+      - url: "https://seekingalpha.com/market_currents.xml"
+        name: "Seeking Alpha"

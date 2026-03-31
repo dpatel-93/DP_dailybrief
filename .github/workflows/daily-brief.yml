@@ -1,0 +1,40 @@
+name: Daily Brief
+
+on:
+  schedule:
+    # 7am EST = 12:00 UTC (EDT) or 12:00 UTC (EST)
+    # Using 11:00 UTC to account for daylight saving — adjust as needed
+    - cron: "0 11 * * *"
+
+  # Ad-hoc trigger — run manually from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Ad-hoc brief requested"
+
+jobs:
+  daily-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Daily Brief
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m src.main
