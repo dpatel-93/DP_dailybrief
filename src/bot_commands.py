@@ -42,7 +42,10 @@ def checkForCommands() -> dict:
     result = {"brief": [], "save": [], "research": [], "list": []}
     maxUpdateId = 0
 
-    for update in data.get("result", []):
+    updates = data.get("result", [])
+    print(f"  Received {len(updates)} update(s) from Telegram")
+
+    for update in updates:
         updateId = update.get("update_id", 0)
         maxUpdateId = max(maxUpdateId, updateId)
 
@@ -53,16 +56,22 @@ def checkForCommands() -> dict:
         msgChatId = str(msg.get("chat", {}).get("id", ""))
 
         if msgChatId != str(chatId):
+            print(f"  Skipping update {updateId}: chat {msgChatId} != {chatId}")
             continue
         if msgTime < cutoff:
+            print(f"  Skipping update {updateId}: too old ({int(time.time() - msgTime)}s ago)")
             continue
 
-        # Parse commands
-        if textLower in ["/brief", "/update", "brief", "update"]:
-            result["brief"].append(msg)
-            print(f"  Found command: '{textLower}' at {msgTime}")
+        # Normalize command — strip @botname suffix (e.g., /brief@MyBot -> /brief)
+        normalized = textLower.split("@")[0].split()[0] if textLower else ""
+        print(f"  Processing update {updateId}: text='{textLower}' normalized='{normalized}'")
 
-        elif textLower.startswith("/save") or textLower.startswith("save"):
+        # Parse commands
+        if normalized in ["/brief", "/update", "brief", "update"]:
+            result["brief"].append(msg)
+            print(f"  Found command: '{normalized}' at {msgTime}")
+
+        elif normalized.startswith("/save") or normalized.startswith("save"):
             nums = re.findall(r"\d+", text)
             if textLower.endswith("all"):
                 result["save"].append({"type": "all"})
@@ -72,13 +81,13 @@ def checkForCommands() -> dict:
                     result["save"].append({"type": "single", "index": int(n)})
                     print(f"  Found command: save {n} at {msgTime}")
 
-        elif textLower.startswith("/research") or textLower.startswith("research"):
+        elif normalized.startswith("/research") or normalized.startswith("research"):
             nums = re.findall(r"\d+", text)
             for n in nums:
                 result["research"].append({"index": int(n)})
                 print(f"  Found command: research {n} at {msgTime}")
 
-        elif textLower in ["/list", "/saved", "list saved"]:
+        elif normalized in ["/list", "/saved", "list saved", "list"]:
             result["list"].append(msg)
             print(f"  Found command: list at {msgTime}")
 

@@ -31,7 +31,11 @@ def main():
     if commands["brief"]:
         print(f"Found {len(commands['brief'])} brief command(s) — running digest!")
         sendReply("Got it! Generating your brief now... \u23f3")
-        run()
+        try:
+            run()
+        except Exception as e:
+            print(f"[ERROR] Digest generation failed: {e}")
+            sendReply(f"Failed to generate brief: {e}")
 
     # --- /list ---
     if commands["list"]:
