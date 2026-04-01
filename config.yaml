@@ -105,8 +105,6 @@ categories:
         name: "Azure Blog Announcements"
       - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AppsonAzureBlog"
         name: "Azure App Service"
-      - url: "https://azureinfohub.azurewebsites.net/feed?channelTitle=Daily+Reports"
-        name: "Azure InfoHub RSS"
       - url: "https://azure.status.microsoft/en-us/status/feed/"
         name: "Azure Status"
       - url: "https://azureweekly.info/rss.xml"
@@ -119,10 +117,6 @@ categories:
         name: "Azure Stack"
       - url: "https://azure.microsoft.com/en-us/blog/content-type/best-practices/feed/"
         name: "Azure Blog Best Practices"
-      - url: "https://azure.microsoft.com/en-us/blog/content-type/developer-tools/feed/"
-        name: "Azure Blog Developer Tools"
-      - url: "https://www.ntweekly.com/feed/"
-        name: "NTWeekly"
 
   # ============================================================
   # AI, COPILOT & AI SECURITY
@@ -185,8 +179,6 @@ categories:
         name: "SecurityWeek"
       - url: "https://www.theregister.com/security/headlines.atom"
         name: "The Register Security"
-      - url: "https://newsroom.trendmicro.com/rss"
-        name: "Trend Micro Research"
       - url: "https://www.zdnet.com/topic/security/rss.xml"
         name: "ZDNet Security"
       - url: "https://gizmodo.com/feed"
@@ -280,7 +272,3 @@ categories:
         name: "CPSC All Recalls"
       - url: "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS/children"
         name: "CPSC Children's Recalls"
-      - url: "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/food-safety-recalls/rss.xml"
-        name: "FDA Food Recalls"
-      - url: "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml"
-        name: "FDA MedWatch Alerts"
