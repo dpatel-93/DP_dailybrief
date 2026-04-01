@@ -97,6 +97,33 @@ categories:
       - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureGovernanceBlog"
         name: "Azure Governance"
 
+  azure_community:
+    name: "Azure Community & Tips"
+    emoji: "\U0001f4e2"
+    feeds:
+      - url: "https://azure.microsoft.com/en-us/blog/content-type/announcements/feed/"
+        name: "Azure Blog Announcements"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AppsonAzureBlog"
+        name: "Azure App Service"
+      - url: "https://azureinfohub.azurewebsites.net/feed?channelTitle=Daily+Reports"
+        name: "Azure InfoHub RSS"
+      - url: "https://azure.status.microsoft/en-us/status/feed/"
+        name: "Azure Status"
+      - url: "https://azureweekly.info/rss.xml"
+        name: "azureweekly.info"
+      - url: "https://build5nines.com/feed/"
+        name: "Build5Nines"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureArchitectureBlog"
+        name: "Azure Architecture Blog"
+      - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=AzureStackBlog"
+        name: "Azure Stack"
+      - url: "https://azure.microsoft.com/en-us/blog/content-type/best-practices/feed/"
+        name: "Azure Blog Best Practices"
+      - url: "https://azure.microsoft.com/en-us/blog/content-type/developer-tools/feed/"
+        name: "Azure Blog Developer Tools"
+      - url: "https://www.ntweekly.com/feed/"
+        name: "NTWeekly"
+
   # ============================================================
   # AI, COPILOT & AI SECURITY
   # ============================================================
@@ -130,8 +157,8 @@ categories:
       - url: "https://techcrunch.com/category/artificial-intelligence/feed/"
         name: "TechCrunch AI"
 
-  ai_security:
-    name: "AI Security & Threats"
+  secops:
+    name: "SecOps & Threat Intel"
     emoji: "\U0001f6a8"
     feeds:
       - url: "https://www.microsoft.com/en-us/security/blog/feed/"
@@ -144,6 +171,30 @@ categories:
         name: "The Hacker News"
       - url: "https://krebsonsecurity.com/feed/"
         name: "Krebs on Security"
+      - url: "https://cyberscoop.com/feed/"
+        name: "CyberScoop"
+      - url: "https://www.darkreading.com/rss.xml"
+        name: "Dark Reading"
+      - url: "https://grahamcluley.com/feed/"
+        name: "Graham Cluley"
+      - url: "https://www.itsecurityguru.org/feed/"
+        name: "IT Security Guru"
+      - url: "https://securityaffairs.com/feed/"
+        name: "Security Affairs"
+      - url: "https://feeds.feedburner.com/securityweek"
+        name: "SecurityWeek"
+      - url: "https://www.theregister.com/security/headlines.atom"
+        name: "The Register Security"
+      - url: "https://newsroom.trendmicro.com/rss"
+        name: "Trend Micro Research"
+      - url: "https://www.zdnet.com/topic/security/rss.xml"
+        name: "ZDNet Security"
+      - url: "https://gizmodo.com/feed"
+        name: "Gizmodo Security"
+      - url: "https://news.softpedia.com/newsRSS/Global-0.xml"
+        name: "Softpedia News"
+      - url: "https://threatpost.com/feed"
+        name: "Threatpost"
 
   # ============================================================
   # MARKETS & FINANCE
