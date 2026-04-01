@@ -2,8 +2,8 @@ name: Telegram Command Listener
 
 on:
   schedule:
-    # Check every 30 minutes for /brief commands
-    - cron: "*/30 * * * *"
+    # Check every 5 minutes for /brief commands (GitHub Actions minimum practical interval)
+    - cron: "*/5 * * * *"
 
   # Also allow manual trigger for testing
   workflow_dispatch:

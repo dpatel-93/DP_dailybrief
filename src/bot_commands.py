@@ -8,7 +8,7 @@ import httpx
 TELEGRAM_API = "https://api.telegram.org/bot{token}"
 
 # Only process messages from the last N seconds (stateless — no offset persistence needed)
-MAX_MESSAGE_AGE_SECONDS = 1800  # 30 minutes (matches the polling interval)
+MAX_MESSAGE_AGE_SECONDS = 600  # 10 minutes (2x the polling interval for buffer)
 
 
 def checkForCommands() -> dict:
