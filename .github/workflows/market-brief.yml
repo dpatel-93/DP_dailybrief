@@ -1,0 +1,39 @@
+name: Pre-Market Brief
+
+on:
+  schedule:
+    # 8:55am EST = 13:55 UTC (12:55 during EDT)
+    # Runs Mon-Fri only
+    - cron: "55 12 * * 1-5"
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Ad-hoc market brief requested"
+
+jobs:
+  market-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Pre-Market Brief
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -c "from src.main import run; run(mode='markets')"

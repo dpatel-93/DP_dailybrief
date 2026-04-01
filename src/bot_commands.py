@@ -14,13 +14,13 @@ MAX_MESSAGE_AGE_SECONDS = 600  # 10 minutes (2x the polling interval for buffer)
 def checkForCommands() -> dict:
     """Poll Telegram for recent commands. Returns categorized commands.
 
-    Returns dict with keys: 'brief', 'save', 'research', 'list'
+    Returns dict with keys: 'brief', 'save', 'research', 'list', 'weekly', 'markets', 'queue'
     Each value is a list of command details.
     """
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chatId = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chatId:
-        return {"brief": [], "save": [], "research": [], "list": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
 
     baseUrl = TELEGRAM_API.format(token=token)
     cutoff = time.time() - MAX_MESSAGE_AGE_SECONDS
@@ -34,12 +34,12 @@ def checkForCommands() -> dict:
         data = resp.json()
     except Exception as e:
         print(f"  [WARN] Failed to poll Telegram: {e}")
-        return {"brief": [], "save": [], "research": [], "list": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
 
     if not data.get("ok"):
-        return {"brief": [], "save": [], "research": [], "list": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
 
-    result = {"brief": [], "save": [], "research": [], "list": []}
+    result = {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
     maxUpdateId = 0
 
     updates = data.get("result", [])
@@ -63,13 +63,25 @@ def checkForCommands() -> dict:
             continue
 
         # Normalize command — strip @botname suffix (e.g., /brief@MyBot -> /brief)
-        normalized = textLower.split("@")[0].split()[0] if textLower else ""
-        print(f"  Processing update {updateId}: text='{textLower}' normalized='{normalized}'")
+        parts = textLower.split("@")[0].split() if textLower else [""]
+        normalized = parts[0]
+        args = parts[1:] if len(parts) > 1 else []
+        print(f"  Processing update {updateId}: text='{textLower}' normalized='{normalized}' args={args}")
 
         # Parse commands
         if normalized in ["/brief", "/update", "brief", "update"]:
-            result["brief"].append(msg)
-            print(f"  Found command: '{normalized}' at {msgTime}")
+            # Check for category filter argument (e.g., /brief azure)
+            filterArg = args[0] if args else None
+            result["brief"].append({"filter": filterArg, **msg})
+            print(f"  Found command: '{normalized}' filter={filterArg} at {msgTime}")
+
+        elif normalized in ["/weekly", "weekly"]:
+            result["weekly"].append(msg)
+            print(f"  Found command: weekly at {msgTime}")
+
+        elif normalized in ["/markets", "markets"]:
+            result["markets"].append(msg)
+            print(f"  Found command: markets at {msgTime}")
 
         elif normalized.startswith("/save") or normalized.startswith("save"):
             nums = re.findall(r"\d+", text)
@@ -86,6 +98,12 @@ def checkForCommands() -> dict:
             for n in nums:
                 result["research"].append({"index": int(n)})
                 print(f"  Found command: research {n} at {msgTime}")
+
+        elif normalized.startswith("/queue") or normalized.startswith("queue"):
+            nums = re.findall(r"\d+", text)
+            for n in nums:
+                result["queue"].append({"index": int(n)})
+                print(f"  Found command: queue {n} at {msgTime}")
 
         elif normalized in ["/list", "/saved", "list saved", "list"]:
             result["list"].append(msg)

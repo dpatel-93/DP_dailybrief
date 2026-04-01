@@ -14,7 +14,13 @@ def buildPrompt(articlesByCategory: dict[str, list[Article]], categoryConfigs: d
         catName = categoryConfigs[key]["name"]
         lines = [f"\n## {catName}"]
         for i, a in enumerate(articles, 1):
-            lines.append(f"{i}. **{a.title}** ({a.source})")
+            tags = []
+            if a.isPriority:
+                tags.append(f"PRIORITY({', '.join(a.priorityMatches[:3])})")
+            if a.trendingTopic:
+                tags.append("TRENDING")
+            tagStr = f" [{' | '.join(tags)}]" if tags else ""
+            lines.append(f"{i}. **{a.title}**{tagStr} ({a.source})")
             lines.append(f"   Link: {a.link}")
             lines.append(f"   Raw summary: {a.summary[:300]}")
         sections.append("\n".join(lines))
@@ -22,20 +28,29 @@ def buildPrompt(articlesByCategory: dict[str, list[Article]], categoryConfigs: d
     return "\n".join(sections)
 
 
-SYSTEM_PROMPT = """You are a concise news briefing assistant for a Cloud Infrastructure Engineer who manages Azure environments and follows AI and financial markets. Create a daily digest that is:
+SYSTEM_PROMPT = """You are a concise news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure) who manages enterprise Azure environments and follows AI, security, and financial markets. Create a daily digest that is:
 - Scannable: headlines first, then 1-sentence summaries
 - Actionable: tell me WHY each story matters to someone managing Azure infra
 - Grouped by category with clear section headers
 - Written in a conversational but professional tone (like a smart colleague giving you the morning rundown)
 - MERGE related Azure subcategories into broader sections to keep it tight
 
-The reader cares about: Azure networking (VNets, NSGs, WAF, Front Door, App Gateway, ExpressRoute), security (Defender, Sentinel, Entra, Conditional Access), apps (Web Apps, Functions, Logic Apps, APIM, Container Apps, AKS), data (Storage, Key Vault, ADF, Databricks, ADLS), AI/Copilot (GitHub Copilot, M365 Copilot, AI Gateway, Claude, Gemini), AI security threats, financial markets (indices, futures, commodities), US/world news, and health/safety alerts (CDC, FDA recalls, children's health).
+PERSONAL RELEVANCE — prioritize stories about:
+HIGH: Azure networking (VNets, NSGs, WAF, Front Door, App Gateway, ExpressRoute, Private Link), security (Defender, Sentinel, Entra, Conditional Access), breaking changes, deprecations, CVEs
+MEDIUM: Apps (Web Apps, Functions, Logic Apps, APIM, Container Apps, AKS), data (Storage, Key Vault, ADF, Databricks), AI/Copilot, cloud industry trends
+NORMAL: Markets, world news, health/recalls
+
+SPECIAL MARKERS in the input:
+- [PRIORITY(keyword)] = matches Dishi's priority keywords — these should appear FIRST in their section
+- [TRENDING] = multiple sources are reporting this — call it out as a developing story
 
 Format your output in these grouped sections (merge subcategories):
 
+🔥 TRENDING (only if there are trending stories — lead with these)
+
 <EMOJI> <SECTION NAME>
 
-1. <HEADLINE>
+⭐ 1. <HEADLINE> (star = priority match)
 <1 sentence: what happened + why it matters>
 🔗 <link>
 
@@ -45,10 +60,11 @@ CRITICAL RULES:
 - Keep each summary to 1 sentence MAX
 - Deduplicate: if the same story appears in multiple feeds, include it only once
 - Skip low-value items (minor SDK patches, routine maintenance notices)
-- Prioritize: breaking changes > new features > enhancements > blog posts
+- Prioritize: breaking changes > security advisories > new features > enhancements > blog posts
 - Max 3-5 items per section, even if more articles are provided
-- Group into ~6-8 sections: Azure Infra, Azure Security, AI & Copilot, Cyber/AI Security, Markets, News, Health/Recalls
-- Total output should be under 4000 characters"""
+- Group into ~6-8 sections: Azure Infra, Azure Security, Cloud & DevOps, AI & Copilot, Cyber/SecOps, Markets, News, Health/Recalls
+- Total output should be under 4000 characters
+- Star (⭐) priority items"""
 
 
 def summarizeDigest(
@@ -83,11 +99,103 @@ def summarizeDigest(
     return response.choices[0].message.content
 
 
+WEEKLY_SYSTEM_PROMPT = """You are a weekly news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure). Create a WEEKLY digest that:
+- Covers the TOP stories from the entire week
+- Groups by theme, not chronology
+- Highlights patterns and trends across the week
+- Calls out the 3 most important things Dishi should know
+- Written in a conversational but professional tone
+
+Format:
+🏆 TOP 3 THIS WEEK
+1. <headline + 2 sentence summary>
+2. <headline + 2 sentence summary>
+3. <headline + 2 sentence summary>
+
+Then sections for: Azure, AI, Security, Markets, News
+- Max 3 items per section
+- Focus on what CHANGED this week, not routine updates
+- Under 5000 characters total"""
+
+
+def summarizeWeekly(
+    articlesByCategory: dict[str, list[Article]],
+    categoryConfigs: dict,
+    model: str = "llama-3.3-70b-versatile",
+) -> str:
+    """Create a weekly summary from the week's articles."""
+    apiKey = os.environ.get("GROQ_API_KEY")
+    if not apiKey:
+        raise ValueError("GROQ_API_KEY environment variable is required")
+
+    client = Groq(api_key=apiKey)
+    articleText = buildPrompt(articlesByCategory, categoryConfigs)
+
+    if not articleText.strip():
+        return "Quiet week — no notable articles found."
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": WEEKLY_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Create this week's summary from these articles:\n{articleText}",
+            },
+        ],
+        temperature=0.3,
+        max_tokens=5000,
+    )
+
+    return response.choices[0].message.content
+
+
+MARKETS_SYSTEM_PROMPT = """You are a pre-market briefing assistant for a trader who follows futures, indices, commodities, and crypto. Create a QUICK pre-market brief that:
+- Opens with futures snapshot (S&P, Nasdaq, Dow, Russell)
+- Covers key movers and why
+- Notes any macro events today (Fed, earnings, data releases)
+- Mentions crypto highlights if notable
+- Tone: direct, no fluff, numbers-first
+- Under 2000 characters
+- End with "Watch for:" with 2-3 things to monitor today"""
+
+
+def summarizeMarkets(
+    articlesByCategory: dict[str, list[Article]],
+    categoryConfigs: dict,
+    model: str = "llama-3.3-70b-versatile",
+) -> str:
+    """Create a pre-market morning brief focused on markets only."""
+    apiKey = os.environ.get("GROQ_API_KEY")
+    if not apiKey:
+        raise ValueError("GROQ_API_KEY environment variable is required")
+
+    client = Groq(api_key=apiKey)
+    articleText = buildPrompt(articlesByCategory, categoryConfigs)
+
+    if not articleText.strip():
+        return "No market news available right now."
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": MARKETS_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Create a pre-market brief from these articles:\n{articleText}",
+            },
+        ],
+        temperature=0.3,
+        max_tokens=2000,
+    )
+
+    return response.choices[0].message.content
+
+
 def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     """Convert the digest into a TTS-friendly script (no markdown, no emojis, no URLs)."""
     apiKey = os.environ.get("GROQ_API_KEY")
     if not apiKey:
-        # Fallback: strip markdown manually
         return _stripForSpeech(digest)
 
     client = Groq(api_key=apiKey)

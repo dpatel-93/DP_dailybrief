@@ -1,10 +1,12 @@
-"""RSS feed parser — fetches and ranks articles from configured feeds."""
+"""RSS feed parser — fetches, deduplicates, tags priority, and detects trends."""
 
+import re
 import feedparser
 import httpx
 from datetime import datetime, timezone
 from dateutil import parser as dateparser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from difflib import SequenceMatcher
 
 
 @dataclass
@@ -15,6 +17,9 @@ class Article:
     published: datetime
     source: str
     category: str
+    isPriority: bool = False
+    priorityMatches: list[str] = field(default_factory=list)
+    trendingTopic: str = ""
 
 
 def fetchFeed(url: str, timeout: int = 15) -> feedparser.FeedParserDict:
@@ -39,14 +44,10 @@ def parseEntry(entry, sourceName: str, category: str) -> Article | None:
     if not title or not link:
         return None
 
-    # Extract summary — prefer summary, fall back to description
     summary = entry.get("summary", entry.get("description", ""))
-    # Strip HTML tags (rough but effective for RSS)
-    import re
     summary = re.sub(r"<[^>]+>", "", summary).strip()
-    summary = summary[:500]  # Cap length
+    summary = summary[:500]
 
-    # Parse published date
     published = None
     for dateField in ["published", "updated", "created"]:
         raw = entry.get(dateField)
@@ -72,6 +73,76 @@ def parseEntry(entry, sourceName: str, category: str) -> Article | None:
     )
 
 
+def tagPriority(articles: list[Article], keywords: list[str]) -> list[Article]:
+    """Tag articles that match priority keywords."""
+    if not keywords:
+        return articles
+
+    patterns = [(kw, re.compile(re.escape(kw), re.IGNORECASE)) for kw in keywords]
+
+    for article in articles:
+        searchText = f"{article.title} {article.summary}"
+        for kw, pattern in patterns:
+            if pattern.search(searchText):
+                article.isPriority = True
+                article.priorityMatches.append(kw)
+
+    return articles
+
+
+def detectTrending(allArticles: list[Article], threshold: int = 3) -> list[Article]:
+    """Detect trending topics — when 3+ articles from different sources cover the same topic."""
+    if len(allArticles) < threshold:
+        return allArticles
+
+    # Group similar titles using fuzzy matching
+    clusters = []
+    used = set()
+
+    for i, a in enumerate(allArticles):
+        if i in used:
+            continue
+        cluster = [i]
+        sources = {a.source}
+
+        for j, b in enumerate(allArticles):
+            if j <= i or j in used:
+                continue
+            # Compare title similarity
+            ratio = SequenceMatcher(None, a.title.lower(), b.title.lower()).ratio()
+            if ratio > 0.5 and b.source not in sources:
+                cluster.append(j)
+                sources.add(b.source)
+                used.add(j)
+
+        if len(sources) >= threshold:
+            # Mark all articles in this cluster as trending
+            topicLabel = allArticles[cluster[0]].title[:60]
+            for idx in cluster:
+                allArticles[idx].trendingTopic = topicLabel
+            used.update(cluster)
+
+    return allArticles
+
+
+def deduplicateAcrossCategories(articlesByCategory: dict[str, list[Article]]) -> dict[str, list[Article]]:
+    """Remove duplicate articles across categories. Keep the article in its first-appearing category."""
+    seenTitles = {}  # normalized title -> category key
+
+    for key, articles in articlesByCategory.items():
+        deduped = []
+        for a in articles:
+            normalized = a.title.lower().strip()
+            if normalized not in seenTitles:
+                seenTitles[normalized] = key
+                deduped.append(a)
+            else:
+                print(f"  [DEDUP] Skipping '{a.title[:50]}...' (already in {seenTitles[normalized]})")
+        articlesByCategory[key] = deduped
+
+    return articlesByCategory
+
+
 def fetchCategory(categoryKey: str, categoryConfig: dict, maxAgeHours: int = 24) -> list[Article]:
     """Fetch all feeds for a category and return articles sorted by recency."""
     articles = []
@@ -86,7 +157,7 @@ def fetchCategory(categoryKey: str, categoryConfig: dict, maxAgeHours: int = 24)
             if article and article.published.timestamp() > cutoff:
                 articles.append(article)
 
-    # Sort by published date (newest first), deduplicate by title
+    # Sort by published date (newest first), deduplicate by title within category
     articles.sort(key=lambda a: a.published, reverse=True)
     seen = set()
     unique = []
@@ -99,16 +170,47 @@ def fetchCategory(categoryKey: str, categoryConfig: dict, maxAgeHours: int = 24)
     return unique
 
 
-def fetchAllFeeds(config: dict) -> dict[str, list[Article]]:
-    """Fetch articles for all categories. Returns {category_key: [Article, ...]}."""
+def fetchAllFeeds(config: dict, categoryFilter: list[str] = None) -> dict[str, list[Article]]:
+    """Fetch articles for all (or filtered) categories.
+
+    Args:
+        config: Full config dict
+        categoryFilter: Optional list of category keys to fetch. If None, fetches all.
+
+    Returns {category_key: [Article, ...]}
+    """
     maxAge = config.get("settings", {}).get("max_age_hours", 24)
     limit = config.get("settings", {}).get("articles_per_category", 3)
+    priorityKeywords = config.get("settings", {}).get("priority_keywords", [])
     results = {}
 
-    for key, catConfig in config.get("categories", {}).items():
+    categories = config.get("categories", {})
+
+    for key, catConfig in categories.items():
+        if categoryFilter and key not in categoryFilter:
+            continue
+
         print(f"\n[{catConfig['name']}]")
         articles = fetchCategory(key, catConfig, maxAge)
+
+        # Tag priority articles
+        if priorityKeywords:
+            articles = tagPriority(articles, priorityKeywords)
+
         results[key] = articles[:limit]
-        print(f"  Got {len(articles)} articles, keeping top {len(results[key])}")
+        priorityCount = sum(1 for a in results[key] if a.isPriority)
+        suffix = f" ({priorityCount} priority)" if priorityCount else ""
+        print(f"  Got {len(articles)} articles, keeping top {len(results[key])}{suffix}")
+
+    # Cross-category dedup
+    results = deduplicateAcrossCategories(results)
+
+    # Detect trending topics across all articles
+    allArticles = [a for arts in results.values() for a in arts]
+    detectTrending(allArticles)
+
+    trendingCount = sum(1 for a in allArticles if a.trendingTopic)
+    if trendingCount:
+        print(f"\n  [TRENDING] {trendingCount} articles are part of trending topics")
 
     return results

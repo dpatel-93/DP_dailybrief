@@ -8,6 +8,59 @@ settings:
   llm_model: "llama-3.3-70b-versatile"
   tts_voice: "en-GB-RyanNeural"
   max_age_hours: 48
+  weekly_max_age_hours: 168  # 7 days for /weekly
+
+  # Priority keywords — articles matching these get flagged with a star
+  priority_keywords:
+    - "App Gateway"
+    - "Application Gateway"
+    - "NSG"
+    - "Network Security Group"
+    - "Front Door"
+    - "WAF"
+    - "Web Application Firewall"
+    - "Entra"
+    - "Conditional Access"
+    - "VNet"
+    - "ExpressRoute"
+    - "Private Link"
+    - "Private Endpoint"
+    - "Key Vault"
+    - "Defender"
+    - "Sentinel"
+    - "breaking change"
+    - "deprecat"
+    - "end of life"
+    - "retire"
+    - "CVE-"
+    - "zero-day"
+    - "critical vulnerability"
+
+  # Category groups for filtered briefs (/brief azure, /brief markets, etc.)
+  category_groups:
+    azure:
+      - azure_networking
+      - azure_security
+      - azure_apps
+      - azure_containers
+      - azure_data
+      - azure_updates
+      - azure_community
+    ai:
+      - ai_copilot
+      - ai_industry
+    security:
+      - secops
+    markets:
+      - markets_news
+      - markets_commodities
+      - markets_crypto
+    news:
+      - news_national
+      - news_world
+    health:
+      - health_alerts
+      - health_recalls
 
 # --- Categories ---
 # Each category pulls from multiple feeds, AI picks the top N most relevant
@@ -151,6 +204,21 @@ categories:
       - url: "https://techcrunch.com/category/artificial-intelligence/feed/"
         name: "TechCrunch AI"
 
+  cloud_industry:
+    name: "Cloud & DevOps Industry"
+    emoji: "\u2601\ufe0f"
+    feeds:
+      - url: "https://thenewstack.io/feed/"
+        name: "The New Stack"
+      - url: "https://feed.infoq.com/cloud-computing/"
+        name: "InfoQ Cloud"
+      - url: "https://devops.com/feed/"
+        name: "DevOps.com"
+      - url: "https://www.hashicorp.com/blog/products/terraform/feed.xml"
+        name: "Terraform Blog"
+      - url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+        name: "CISA Advisories"
+
   secops:
     name: "SecOps & Threat Intel"
     emoji: "\U0001f6a8"
@@ -220,6 +288,17 @@ categories:
         name: "Investing.com Economy"
       - url: "https://www.investing.com/rss/290.rss"
         name: "Investing.com Editor's Picks"
+
+  markets_crypto:
+    name: "Crypto & Digital Assets"
+    emoji: "\U0001fa99"
+    feeds:
+      - url: "https://www.coindesk.com/arc/outboundfeeds/rss/"
+        name: "CoinDesk"
+      - url: "https://www.theblock.co/rss.xml"
+        name: "The Block"
+      - url: "https://cointelegraph.com/rss"
+        name: "CoinTelegraph"
 
   # ============================================================
   # NEWS & WORLD AFFAIRS

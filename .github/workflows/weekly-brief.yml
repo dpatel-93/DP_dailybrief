@@ -1,0 +1,39 @@
+name: Weekly Brief
+
+on:
+  schedule:
+    # Saturday 9am EST = 14:00 UTC (13:00 during EDT)
+    - cron: "0 13 * * 6"
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Ad-hoc weekly summary requested"
+
+jobs:
+  weekly-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Weekly Brief
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_TOKEN: ${{ secrets.VAULT_PAT }}
+        run: python -c "from src.main import run; run(mode='weekly')"

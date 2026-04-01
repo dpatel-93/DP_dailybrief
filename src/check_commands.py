@@ -1,4 +1,4 @@
-"""Entry point for the command-check workflow. Handles /brief, /save, /research, /list."""
+"""Entry point for the command-check workflow. Handles /brief, /weekly, /markets, /save, /research, /queue, /list."""
 
 import os
 import sys
@@ -12,8 +12,10 @@ from src.vault import (
     createSaveNote,
     createResearchNote,
     pushNoteToVault,
+    loadQueue,
+    saveQueue,
 )
-from src.main import run
+from src.main import run, loadConfig, resolveCategoryFilter
 from datetime import datetime
 import re
 
@@ -27,15 +29,57 @@ def main():
         print("No commands found. Nothing to do.")
         return
 
-    # --- /brief or /update ---
+    config = loadConfig()
+
+    # --- /brief or /update (with optional filter) ---
     if commands["brief"]:
         print(f"Found {len(commands['brief'])} brief command(s) — running digest!")
-        sendReply("Got it! Generating your brief now... \u23f3")
+        # Check first brief command for a filter
+        firstBrief = commands["brief"][0]
+        filterArg = firstBrief.get("filter")
+
+        if filterArg:
+            categoryFilter = resolveCategoryFilter(config, filterArg)
+            if categoryFilter:
+                sendReply(f"Got it! Generating {filterArg} brief... \u23f3")
+                try:
+                    run(categoryFilter=categoryFilter)
+                except Exception as e:
+                    print(f"[ERROR] Filtered digest failed: {e}")
+                    sendReply(f"Failed to generate {filterArg} brief: {e}")
+            else:
+                sendReply(
+                    f"Unknown filter: '{filterArg}'\n\n"
+                    "Available filters: azure, ai, security, markets, news, health\n"
+                    "Or use /brief for the full digest."
+                )
+        else:
+            sendReply("Got it! Generating your brief now... \u23f3")
+            try:
+                run()
+            except Exception as e:
+                print(f"[ERROR] Digest generation failed: {e}")
+                sendReply(f"Failed to generate brief: {e}")
+
+    # --- /weekly ---
+    if commands["weekly"]:
+        print("Found weekly command — generating weekly summary!")
+        sendReply("Generating your weekly summary... \u23f3")
         try:
-            run()
+            run(mode="weekly")
         except Exception as e:
-            print(f"[ERROR] Digest generation failed: {e}")
-            sendReply(f"Failed to generate brief: {e}")
+            print(f"[ERROR] Weekly summary failed: {e}")
+            sendReply(f"Failed to generate weekly summary: {e}")
+
+    # --- /markets ---
+    if commands["markets"]:
+        print("Found markets command — generating pre-market brief!")
+        sendReply("Generating pre-market brief... \U0001f4c8")
+        try:
+            run(mode="markets")
+        except Exception as e:
+            print(f"[ERROR] Markets brief failed: {e}")
+            sendReply(f"Failed to generate markets brief: {e}")
 
     # --- /list ---
     if commands["list"]:
@@ -52,6 +96,10 @@ def main():
     for cmd in commands["research"]:
         handleResearch(cmd["index"])
 
+    # --- /queue ---
+    for cmd in commands["queue"]:
+        handleQueue(cmd["index"])
+
 
 def handleList():
     """Send a list of articles from the last digest."""
@@ -66,10 +114,13 @@ def handleList():
         if a["category"] != currentCat:
             currentCat = a["category"]
             lines.append(f"\n*{currentCat}*")
-        lines.append(f"  {a['index']}. {a['title']}")
+        priority = "\u2b50 " if a.get("isPriority") else ""
+        trending = " \U0001f525" if a.get("trendingTopic") else ""
+        lines.append(f"  {a['index']}. {priority}{a['title']}{trending}")
 
     lines.append("\n\U0001f4be /save <number> — Save to Obsidian")
     lines.append("\U0001f50d /research <number> — Deep research + save")
+    lines.append("\U0001f4cc /queue <number> — Read later")
     sendReply("\n".join(lines))
 
 
@@ -105,7 +156,6 @@ def handleSaveAll():
 
     sendReply(f"\U0001f4be Saving all {len(articles)} articles to Obsidian...")
 
-    # Create a single combined note for the full digest
     now = datetime.now().strftime("%Y-%m-%d")
     lines = [f"# Daily Digest — {now}\n"]
 
@@ -151,6 +201,36 @@ def handleResearch(index: int):
         sendReply(f"\u2705 Research saved to Obsidian vault!\nDailyUpdates/{filename}")
     else:
         sendReply(f"\u274c Failed to save. Check GITHUB_TOKEN secret.")
+
+
+def handleQueue(index: int):
+    """Add an article to the read-later queue."""
+    article = getArticleByIndex(index)
+    if not article:
+        sendReply(f"Article #{index} not found. Send /list to see available articles.")
+        return
+
+    queue = loadQueue()
+
+    # Check for duplicates
+    if any(q["link"] == article["link"] for q in queue):
+        sendReply(f"\U0001f4cc Already in your queue: {article['title'][:50]}")
+        return
+
+    queue.append({
+        "title": article["title"],
+        "link": article["link"],
+        "source": article["source"],
+        "category": article["category"],
+        "queuedAt": datetime.now().isoformat(),
+    })
+    saveQueue(queue)
+
+    sendReply(
+        f"\U0001f4cc Queued #{index}: {article['title'][:50]}\n"
+        f"Queue size: {len(queue)} article(s)\n"
+        f"Send /queue to see your full queue"
+    )
 
 
 def _safeFilename(title: str) -> str:

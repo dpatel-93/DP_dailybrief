@@ -9,9 +9,34 @@ from groq import Groq
 VAULT_REPO = "dpatel-93/DP_Obsidian_Vault"
 VAULT_FOLDER = "DailyUpdates"  # Notes go to DailyUpdates/ folder in the vault
 DIGEST_FILE = "data/last_digest.json"
+QUEUE_FILE = "data/queue.json"
 
 
 # --- Digest Storage ---
+
+def loadQueue() -> list[dict]:
+    """Load the read-later queue."""
+    queuePath = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        QUEUE_FILE,
+    )
+    try:
+        with open(queuePath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def saveQueue(queue: list[dict]):
+    """Save the read-later queue."""
+    queuePath = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        QUEUE_FILE,
+    )
+    os.makedirs(os.path.dirname(queuePath), exist_ok=True)
+    with open(queuePath, "w", encoding="utf-8") as f:
+        json.dump(queue, f, indent=2)
+
 
 def saveDigestArticles(articlesByCategory: dict, categoryConfigs: dict):
     """Save the current digest articles so /save and /research can reference them by number."""
@@ -20,7 +45,7 @@ def saveDigestArticles(articlesByCategory: dict, categoryConfigs: dict):
     for key, articles in articlesByCategory.items():
         catName = categoryConfigs.get(key, {}).get("name", key)
         for a in articles:
-            flat.append({
+            entry = {
                 "index": globalIdx,
                 "title": a.title,
                 "link": a.link,
@@ -28,7 +53,13 @@ def saveDigestArticles(articlesByCategory: dict, categoryConfigs: dict):
                 "source": a.source,
                 "category": catName,
                 "published": a.published.isoformat(),
-            })
+            }
+            if hasattr(a, "isPriority") and a.isPriority:
+                entry["isPriority"] = True
+                entry["priorityMatches"] = a.priorityMatches
+            if hasattr(a, "trendingTopic") and a.trendingTopic:
+                entry["trendingTopic"] = a.trendingTopic
+            flat.append(entry)
             globalIdx += 1
 
     digestPath = os.path.join(
