@@ -46,14 +46,13 @@ settings:
       - "BL1"  # Bundesliga
       - "SA"   # Serie A
       - "FL1"  # Ligue 1
-      - "MLS"  # Major League Soccer
+      # MLS not available on football-data.org free tier — upgrade to add it
     favorite_teams:
       - "Inter Miami"
     match_window_days: 2  # look ahead/behind for matches
     standings_competitions:
       - "WC"
       - "PL"
-      - "MLS"
 
   # Category groups for filtered briefs (/brief azure, /brief markets, etc.)
   category_groups:
