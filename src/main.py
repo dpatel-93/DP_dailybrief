@@ -7,12 +7,13 @@ Supports: full brief, filtered brief, weekly summary, market brief
 import os
 import sys
 import yaml
-from datetime import datetime
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.feed_parser import fetchAllFeeds
-from src.summarizer import summarizeDigest, summarizeWeekly, summarizeMarkets, makeSpokenVersion
+from src.summarizer import summarizeDigest, summarizeWeekly, summarizeMarkets, summarizeSports, makeSpokenVersion
+from src.sports import fetchMatches, fetchStandings, buildSportsBriefText
 from src.tts import generateAudio
 from src.telegram import sendMessage, sendAudio
 from src.vault import saveDigestArticles
@@ -59,13 +60,92 @@ def resolveCategoryFilter(config: dict, groupName: str = None) -> list[str] | No
     return None
 
 
+def runSports():
+    """Sports pipeline: fetch match data → AI summarize → TTS → deliver."""
+    print("=" * 60)
+    print(f"DailyUpdates [sports] — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 60)
+
+    config = loadConfig()
+    settings = config.get("settings", {})
+    sportsConfig = settings.get("sports", {})
+    competitions = sportsConfig.get("competitions", ["WC", "PL", "MLS"])
+    standingsComps = sportsConfig.get("standings_competitions", ["WC"])
+    windowDays = sportsConfig.get("match_window_days", 2)
+
+    now = datetime.now()
+    dateFrom = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    dateTo = (now + timedelta(days=windowDays)).strftime("%Y-%m-%d")
+
+    # --- Step 1: Fetch match data ---
+    print(f"\n[Step 1/4] Fetching matches ({dateFrom} to {dateTo})...")
+    matches = fetchMatches(dateFrom=dateFrom, dateTo=dateTo, competitionCodes=competitions)
+    print(f"  Found {len(matches)} matches")
+
+    # --- Fetch standings for key competitions ---
+    print("\n  Fetching standings...")
+    allStandings = []
+    for comp in standingsComps:
+        s = fetchStandings(comp)
+        if s:
+            allStandings.extend(s)
+
+    # --- Step 2: AI Summarization ---
+    print("\n[Step 2/4] Generating sports brief...")
+    sportsText = buildSportsBriefText(matches, allStandings if allStandings else None)
+    model = settings.get("llm_model", "llama-3.3-70b-versatile")
+    digest = summarizeSports(sportsText, model=model)
+    print(f"  Brief length: {len(digest)} chars")
+
+    # --- Step 3: Text-to-Speech ---
+    print("\n[Step 3/4] Generating audio...")
+    voice = settings.get("tts_voice", "en-US-GuyNeural")
+    spokenText = makeSpokenVersion(digest, config.get("categories", {}))
+    audioPath = generateAudio(spokenText, voice=voice)
+
+    # --- Step 4: Deliver via Telegram ---
+    print("\n[Step 4/4] Sending to Telegram...")
+    dateStr = datetime.now().strftime("%B %d, %Y")
+    header = "⚽ *Sports Brief — " + dateStr + "*\n"
+    fullMessage = header + "\n" + digest
+    result = sendMessage(fullMessage)
+    if result.get("ok"):
+        print("  Text message sent!")
+    else:
+        print(f"  [ERROR] Text send failed: {result}")
+
+    tips = (
+        "────────────────────\n"
+        "\U0001f3a7 Audio version is below\n\n"
+        "Commands:\n"
+        "/sports — Match day update\n"
+        "/brief — Full daily brief\n"
+        "/markets — Pre-market brief\n"
+        "/weekly — Week in review"
+    )
+    sendMessage(tips, parseMode="Markdown")
+
+    audioResult = sendAudio(audioPath, caption=f"\U0001f3a7 Listen to today's sports brief ({datetime.now().strftime('%b %d')})")
+    if audioResult.get("ok"):
+        print("  Audio sent!")
+    else:
+        print(f"  [ERROR] Audio send failed: {audioResult}")
+
+    print("\n" + "=" * 60)
+    print("Done!")
+    print("=" * 60)
+
+
 def run(categoryFilter: list[str] = None, mode: str = "daily"):
     """Main pipeline: fetch → summarize → TTS → deliver.
 
     Args:
         categoryFilter: Optional list of category keys to include. None = all.
-        mode: 'daily' (default), 'weekly', or 'markets'
+        mode: 'daily' (default), 'weekly', 'markets', or 'sports'
     """
+    if mode == "sports":
+        return runSports()
+
     print("=" * 60)
     print(f"DailyUpdates [{mode}] — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
@@ -151,6 +231,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
         "/brief security — SecOps only\n"
         "/brief markets — Markets only\n"
         "/markets — Pre-market brief\n"
+        "/sports — Match day update\n"
         "/weekly — Week in review\n"
         "/queue <number> — Read later"
     )
