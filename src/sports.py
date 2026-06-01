@@ -69,6 +69,7 @@ def fetchMatches(dateFrom: str = None, dateTo: str = None, competitionCodes: lis
             "dateTo": dateTo,
         })
         if not data or "matches" not in data:
+            print(f"  Skipping {code} — no data or not available on current plan")
             continue
 
         compName = COMPETITIONS.get(code, code)
