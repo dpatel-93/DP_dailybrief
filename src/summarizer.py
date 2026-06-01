@@ -224,40 +224,47 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     return response.choices[0].message.content
 
 
-SPORTS_SYSTEM_PROMPT = """You are a sports briefing assistant for a football/soccer fan tracking the World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, and MLS (especially Inter Miami). Create a match day brief that:
-- Leads with LIVE matches if any are in progress
+SPORTS_SYSTEM_PROMPT = """You are a sports briefing assistant covering soccer (World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A, Ligue 1 — especially Inter Miami), the NBA, and the NFL. Create a match day brief that:
+- Leads with LIVE games if any are in progress
 - Shows yesterday's/today's results with scorelines and notable moments
-- Lists upcoming matches with EXACT kickoff times in Eastern Time (ET)
-- For each upcoming match, note the broadcast channel — World Cup and major matches are on FOX, FS1, or FS2 (the user has a Fox subscription). MLS matches may be on Apple TV (MLS Season Pass)
+- Lists upcoming games with the FULL DATE and EXACT start time in Eastern Time (ET) — always include the day of week and date (e.g., "Thu Jun 11, 3:00 PM ET"), never just the time
+- For each upcoming game, note the broadcast channel. The input data already includes "TV:" info for NBA/NFL games — use it verbatim. For soccer, infer the channel (the user has a Fox subscription)
 - Highlights World Cup matches above all else — these are MUST-WATCH
-- Calls out upsets, hat tricks, red cards, dramatic finishes, penalty shootouts
+- Calls out upsets, overtime thrillers, hat tricks, red cards, dramatic finishes, buzzer-beaters
 - Includes standings context where relevant (e.g., "top of Group A", "fighting for 4th")
 - Tone: passionate but concise, like a knowledgeable friend giving you the rundown before your day
 
-Format:
+Format with one section PER SPORT (only include sports that have games):
 
-⚽ LIVE (only if matches in progress)
-<match details with current score>
+⚽ SOCCER
+🏀 NBA
+🏈 NFL
 
-📋 RESULTS
-<scorelines grouped by competition, note any standout performances>
+Within each sport, organize as:
 
-📺 UPCOMING — WHAT TO WATCH
-For each match:
-<Time ET> | <Home> vs <Away> | <Competition> | <Channel: FOX/FS1/FS2/Apple TV>
-<One line: why this match matters or who to watch>
+LIVE (only if games in progress)
+<game details with current score>
 
-🏆 STANDINGS (only if provided — show top 4-5 of relevant tables)
+RESULTS
+<scorelines, note any standout performances>
 
-End with a "🎯 Don't Miss:" one-liner highlighting the single best match to watch.
+UPCOMING — WHAT TO WATCH
+For each game:
+<Day, Date, Time ET> | <Away> @ <Home> | <League> | <Channel>
+<One line: why this game matters or who to watch>
+
+🏆 STANDINGS (soccer only — show top 4-5 of relevant tables)
+
+End with a "🎯 Don't Miss:" one-liner highlighting the single best game to watch across all sports.
 
 RULES:
 - World Cup matches get priority placement and more detail
 - Flag Inter Miami matches with 🌴 emoji
-- All times must be in Eastern Time (ET) — convert from UTC if needed
-- For broadcast info: FIFA World Cup → FOX/FS1/FS2, Premier League → USA Network/Peacock, Champions League → CBS/Paramount+, La Liga → ESPN+, Bundesliga → ESPN+, Serie A → CBS/Paramount+, Ligue 1 → beIN Sports, MLS → Apple TV (MLS Season Pass)
-- Under 3500 characters total
-- Use country flags where possible (🇺🇸 🇧🇷 🇦🇷 🇫🇷 🇩🇪 🇪🇸 🏴󠁧󠁢󠁥󠁮󠁧󠁿 etc.)"""
+- ALWAYS include the day of week + date for every upcoming game, not just the time
+- All times must be in Eastern Time (ET)
+- For soccer broadcast info: FIFA World Cup → FOX/FS1/FS2, Premier League → USA Network/Peacock, Champions League → CBS/Paramount+, La Liga → ESPN+, Bundesliga → ESPN+, Serie A → CBS/Paramount+, Ligue 1 → beIN Sports. For NBA/NFL, use the TV info provided in the input
+- Under 3800 characters total
+- Use country flags for soccer where possible (🇺🇸 🇧🇷 🇦🇷 🇫🇷 🇩🇪 🇪🇸 🏴󠁧󠁢󠁥󠁮󠁧󠁿 etc.)"""
 
 
 def summarizeSports(sportsText: str, model: str = "llama-3.3-70b-versatile") -> str:
@@ -269,7 +276,7 @@ def summarizeSports(sportsText: str, model: str = "llama-3.3-70b-versatile") -> 
     client = Groq(api_key=apiKey)
 
     if not sportsText.strip() or sportsText.startswith("No upcoming"):
-        return "No football matches found for today. Rest day! ⚽😴"
+        return "No games found for today across soccer, NBA, or NFL. Rest day! 😴"
 
     response = client.chat.completions.create(
         model=model,

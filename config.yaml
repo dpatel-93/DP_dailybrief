@@ -36,7 +36,7 @@ settings:
     - "zero-day"
     - "critical vulnerability"
 
-  # Sports settings (football-data.org)
+  # Sports settings — soccer via football-data.org, NBA/NFL via ESPN
   sports:
     competitions:
       - "WC"   # FIFA World Cup
@@ -47,6 +47,9 @@ settings:
       - "SA"   # Serie A
       - "FL1"  # Ligue 1
       # MLS not available on football-data.org free tier — upgrade to add it
+    espn_leagues:   # NBA/NFL via ESPN's free public API (no key needed)
+      - "nba"
+      - "nfl"
     favorite_teams:
       - "Inter Miami"
     match_window_days: 2  # look ahead/behind for matches
