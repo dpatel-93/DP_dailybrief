@@ -1,4 +1,4 @@
-"""Sports module — fetches football/soccer data from football-data.org API."""
+"""Sports module — fetches soccer (football-data.org) and NBA/NFL (ESPN) data."""
 
 import os
 from datetime import datetime, timedelta
@@ -144,7 +144,7 @@ def _normalizeMatch(m: dict, compName: str, compCode: str) -> dict:
     if utcDate:
         try:
             dt = datetime.fromisoformat(utcDate.replace("Z", "+00:00"))
-            localTime = dt.astimezone(EASTERN).strftime("%b %d, %I:%M %p ET")
+            localTime = dt.astimezone(EASTERN).strftime("%a %b %d, %I:%M %p ET")
         except (ValueError, TypeError):
             localTime = utcDate
 
@@ -166,6 +166,137 @@ def _normalizeMatch(m: dict, compName: str, compCode: str) -> dict:
         "halfTimeHome": halfTime.get("home"),
         "halfTimeAway": halfTime.get("away"),
         "winner": score.get("winner", ""),
+        "broadcast": "",
+    }
+
+
+# --- ESPN (NBA / NFL) ---
+# ESPN's public scoreboard JSON API — free, no key. Covers scores, schedules,
+# game status, and broadcast networks.
+ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
+
+ESPN_SPORTS = {
+    "nba": {"path": "basketball/nba", "label": "NBA"},
+    "nfl": {"path": "football/nfl", "label": "NFL"},
+}
+
+
+def fetchEspnGames(sportKey: str, dateFrom: str = None, dateTo: str = None) -> list[dict]:
+    """Fetch NBA/NFL games from ESPN for a date range (inclusive).
+
+    Args:
+        sportKey: 'nba' or 'nfl'
+        dateFrom: YYYY-MM-DD (defaults to today)
+        dateTo: YYYY-MM-DD (defaults to dateFrom)
+
+    Returns list of normalized game dicts matching the match schema.
+    """
+    sport = ESPN_SPORTS.get(sportKey)
+    if not sport:
+        return []
+
+    now = datetime.now(EASTERN)
+    start = datetime.strptime(dateFrom, "%Y-%m-%d").date() if dateFrom else now.date()
+    end = datetime.strptime(dateTo, "%Y-%m-%d").date() if dateTo else start
+
+    games = []
+    day = start
+    while day <= end:
+        ds = day.strftime("%Y%m%d")
+        try:
+            resp = httpx.get(
+                f"{ESPN_BASE}/{sport['path']}/scoreboard",
+                params={"dates": ds},
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                print(f"  [WARN] ESPN {sportKey} {ds} returned {resp.status_code}")
+                day += timedelta(days=1)
+                continue
+            data = resp.json()
+        except Exception as e:
+            print(f"  [WARN] ESPN {sportKey} request failed: {e}")
+            day += timedelta(days=1)
+            continue
+
+        for event in data.get("events", []):
+            normalized = _normalizeEspnGame(event, sport["label"])
+            if normalized:
+                games.append(normalized)
+        day += timedelta(days=1)
+
+    games.sort(key=lambda g: g["utcDate"])
+    return games
+
+
+def _normalizeEspnGame(event: dict, label: str) -> dict | None:
+    """Normalize an ESPN scoreboard event into the shared match schema."""
+    competitions = event.get("competitions", [])
+    if not competitions:
+        return None
+    comp = competitions[0]
+
+    home = away = {}
+    for c in comp.get("competitors", []):
+        if c.get("homeAway") == "home":
+            home = c
+        elif c.get("homeAway") == "away":
+            away = c
+
+    utcDate = event.get("date", "")
+    localTime = ""
+    if utcDate:
+        try:
+            dt = datetime.fromisoformat(utcDate.replace("Z", "+00:00"))
+            localTime = dt.astimezone(EASTERN).strftime("%a %b %d, %I:%M %p ET")
+        except (ValueError, TypeError):
+            localTime = utcDate
+
+    # ESPN status state: "pre" (scheduled), "in" (live), "post" (final)
+    statusType = event.get("status", {}).get("type", {})
+    state = statusType.get("state", "")
+    statusMap = {"pre": "SCHEDULED", "in": "LIVE", "post": "FINISHED"}
+    status = statusMap.get(state, state.upper())
+
+    # Broadcast networks
+    broadcast = ""
+    networks = []
+    for b in comp.get("broadcasts", []):
+        networks.extend(b.get("names", []))
+    if not networks:
+        for b in comp.get("geoBroadcasts", []):
+            name = b.get("media", {}).get("shortName", "")
+            if name:
+                networks.append(name)
+    if networks:
+        broadcast = ", ".join(dict.fromkeys(networks))  # dedupe, keep order
+
+    def _score(c):
+        s = c.get("score")
+        try:
+            return int(s)
+        except (ValueError, TypeError):
+            return None
+
+    return {
+        "competition": label,
+        "competitionCode": label,
+        "matchday": None,
+        "stage": statusType.get("description", "") if state == "post" else "",
+        "group": "",
+        "status": status,
+        "utcDate": utcDate,
+        "localTime": localTime,
+        "homeTeam": home.get("team", {}).get("displayName", "Unknown"),
+        "homeShort": home.get("team", {}).get("abbreviation", ""),
+        "awayTeam": away.get("team", {}).get("displayName", "Unknown"),
+        "awayShort": away.get("team", {}).get("abbreviation", ""),
+        "homeScore": _score(home),
+        "awayScore": _score(away),
+        "halfTimeHome": None,
+        "halfTimeAway": None,
+        "winner": "HOME_TEAM" if home.get("winner") else ("AWAY_TEAM" if away.get("winner") else ""),
+        "broadcast": broadcast,
     }
 
 
@@ -186,18 +317,19 @@ def buildSportsBriefText(matches: list[dict], standings: list[dict] = None) -> s
             lines = [f"\n## {comp}"]
             for m in compMatches:
                 status = m["status"]
+                tv = f" (TV: {m['broadcast']})" if m.get("broadcast") else ""
                 if status == "FINISHED":
                     result = f"{m['homeTeam']} {m['homeScore']} - {m['awayScore']} {m['awayTeam']}"
                     ht = ""
                     if m["halfTimeHome"] is not None:
                         ht = f" (HT: {m['halfTimeHome']}-{m['halfTimeAway']})"
-                    lines.append(f"  RESULT: {result}{ht}")
+                    lines.append(f"  RESULT ({m['localTime']}): {result}{ht}")
                 elif status in ("LIVE", "IN_PLAY", "PAUSED"):
-                    lines.append(f"  LIVE: {m['homeTeam']} {m['homeScore']} - {m['awayScore']} {m['awayTeam']}")
+                    lines.append(f"  LIVE: {m['homeTeam']} {m['homeScore']} - {m['awayScore']} {m['awayTeam']}{tv}")
                 elif status in ("TIMED", "SCHEDULED"):
-                    lines.append(f"  UPCOMING: {m['homeTeam']} vs {m['awayTeam']} — {m['localTime']}")
+                    lines.append(f"  UPCOMING: {m['homeTeam']} vs {m['awayTeam']} — {m['localTime']}{tv}")
                 else:
-                    lines.append(f"  {status}: {m['homeTeam']} vs {m['awayTeam']} — {m['localTime']}")
+                    lines.append(f"  {status}: {m['homeTeam']} vs {m['awayTeam']} — {m['localTime']}{tv}")
 
                 if m.get("stage") and m["stage"] not in ("REGULAR_SEASON", "LEAGUE_STAGE"):
                     lines.append(f"    Stage: {m['stage'].replace('_', ' ').title()}")

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.feed_parser import fetchAllFeeds
 from src.summarizer import summarizeDigest, summarizeWeekly, summarizeMarkets, summarizeSports, makeSpokenVersion
-from src.sports import fetchMatches, fetchStandings, buildSportsBriefText
+from src.sports import fetchMatches, fetchStandings, fetchEspnGames, buildSportsBriefText
 from src.tts import generateAudio
 from src.telegram import sendMessage, sendAudio
 from src.vault import saveDigestArticles
@@ -71,6 +71,7 @@ def runSports():
     sportsConfig = settings.get("sports", {})
     competitions = sportsConfig.get("competitions", ["WC", "PL", "MLS"])
     standingsComps = sportsConfig.get("standings_competitions", ["WC"])
+    espnLeagues = sportsConfig.get("espn_leagues", ["nba", "nfl"])
     windowDays = sportsConfig.get("match_window_days", 2)
 
     now = datetime.now()
@@ -80,7 +81,13 @@ def runSports():
     # --- Step 1: Fetch match data ---
     print(f"\n[Step 1/4] Fetching matches ({dateFrom} to {dateTo})...")
     matches = fetchMatches(dateFrom=dateFrom, dateTo=dateTo, competitionCodes=competitions)
-    print(f"  Found {len(matches)} matches")
+    print(f"  Found {len(matches)} soccer matches")
+
+    # --- Fetch NBA/NFL games from ESPN ---
+    for league in espnLeagues:
+        games = fetchEspnGames(league, dateFrom=dateFrom, dateTo=dateTo)
+        print(f"  Found {len(games)} {league.upper()} games")
+        matches.extend(games)
 
     # --- Fetch standings for key competitions ---
     print("\n  Fetching standings...")
@@ -106,7 +113,7 @@ def runSports():
     # --- Step 4: Deliver via Telegram ---
     print("\n[Step 4/4] Sending to Telegram...")
     dateStr = datetime.now().strftime("%B %d, %Y")
-    header = "⚽ *Sports Brief — " + dateStr + "*\n"
+    header = "⚽🏀🏈 *Sports Brief — " + dateStr + "*\n"
     fullMessage = header + "\n" + digest
     result = sendMessage(fullMessage)
     if result.get("ok"):
