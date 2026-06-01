@@ -20,7 +20,7 @@ def checkForCommands() -> dict:
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chatId = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chatId:
-        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "sports": [], "queue": []}
 
     baseUrl = TELEGRAM_API.format(token=token)
     cutoff = time.time() - MAX_MESSAGE_AGE_SECONDS
@@ -34,12 +34,12 @@ def checkForCommands() -> dict:
         data = resp.json()
     except Exception as e:
         print(f"  [WARN] Failed to poll Telegram: {e}")
-        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "sports": [], "queue": []}
 
     if not data.get("ok"):
-        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
+        return {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "sports": [], "queue": []}
 
-    result = {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "queue": []}
+    result = {"brief": [], "save": [], "research": [], "list": [], "weekly": [], "markets": [], "sports": [], "queue": []}
     maxUpdateId = 0
 
     updates = data.get("result", [])
@@ -82,6 +82,10 @@ def checkForCommands() -> dict:
         elif normalized in ["/markets", "markets"]:
             result["markets"].append(msg)
             print(f"  Found command: markets at {msgTime}")
+
+        elif normalized in ["/sports", "sports"]:
+            result["sports"].append(msg)
+            print(f"  Found command: sports at {msgTime}")
 
         elif normalized.startswith("/save") or normalized.startswith("save"):
             nums = re.findall(r"\d+", text)

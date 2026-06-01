@@ -81,6 +81,16 @@ def main():
             print(f"[ERROR] Markets brief failed: {e}")
             sendReply(f"Failed to generate markets brief: {e}")
 
+    # --- /sports ---
+    if commands["sports"]:
+        print("Found sports command — generating sports brief!")
+        sendReply("Generating sports brief... ⚽")
+        try:
+            run(mode="sports")
+        except Exception as e:
+            print(f"[ERROR] Sports brief failed: {e}")
+            sendReply(f"Failed to generate sports brief: {e}")
+
     # --- /list ---
     if commands["list"]:
         handleList()
