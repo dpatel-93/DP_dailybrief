@@ -7,8 +7,13 @@ import httpx
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}"
 
-# Only process messages from the last N seconds (stateless — no offset persistence needed)
-MAX_MESSAGE_AGE_SECONDS = 600  # 10 minutes (2x the polling interval for buffer)
+# Safety window for processing messages. The Telegram getUpdates offset (advanced
+# at the end of each poll) is what actually prevents a command from running twice —
+# acknowledged updates are never returned again. This window is just a sanity guard
+# so we don't execute truly ancient commands on a first/fresh poll. It must be large
+# enough to tolerate GitHub Actions cron throttling: the */5 schedule is frequently
+# delayed to run only every 1-2 hours, so a tight window silently drops commands.
+MAX_MESSAGE_AGE_SECONDS = 21600  # 6 hours
 
 
 def checkForCommands() -> dict:
