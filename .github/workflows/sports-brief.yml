@@ -3,8 +3,8 @@ name: Sports Brief
 on:
   schedule:
     # 7:30am EST = 12:30 UTC (11:30 during EDT)
-    # Runs daily — catches morning match previews and overnight results
-    - cron: "30 11 * * *"
+    # Weekly — runs every Monday (every 7 days)
+    - cron: "30 11 * * 1"
 
   workflow_dispatch:
     inputs:

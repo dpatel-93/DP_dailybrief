@@ -89,6 +89,15 @@ def runSports():
         print(f"  Found {len(games)} {league.upper()} games")
         matches.extend(games)
 
+    # --- Filter to favorite teams (if configured) ---
+    favTeams = sportsConfig.get("favorite_teams", [])
+    if favTeams:
+        matches = [
+            m for m in matches
+            if any(t.lower() in f"{m['homeTeam']} {m['awayTeam']}".lower() for t in favTeams)
+        ]
+        print(f"  {len(matches)} games after filtering to: {', '.join(favTeams)}")
+
     # --- Fetch standings for key competitions ---
     print("\n  Fetching standings...")
     allStandings = []
@@ -113,7 +122,7 @@ def runSports():
     # --- Step 4: Deliver via Telegram ---
     print("\n[Step 4/4] Sending to Telegram...")
     dateStr = datetime.now().strftime("%B %d, %Y")
-    header = "⚽🏀🏈 *Sports Brief — " + dateStr + "*\n"
+    header = "🏀🏈 *Sports Brief — " + dateStr + "*\n"
     fullMessage = header + "\n" + digest
     result = sendMessage(fullMessage)
     if result.get("ok"):
