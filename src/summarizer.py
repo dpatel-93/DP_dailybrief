@@ -276,7 +276,7 @@ def summarizeSports(sportsText: str, model: str = "llama-3.3-70b-versatile") -> 
     client = Groq(api_key=apiKey)
 
     if not sportsText.strip() or sportsText.startswith("No upcoming"):
-        return "No games found for today across soccer, NBA, or NFL. Rest day! 😴"
+        return "No Knicks or Giants games this week. Off week! 🏀🏈😴"
 
     response = client.chat.completions.create(
         model=model,

@@ -36,26 +36,18 @@ settings:
     - "zero-day"
     - "critical vulnerability"
 
-  # Sports settings — soccer via football-data.org, NBA/NFL via ESPN
+  # Sports settings — NBA/NFL via ESPN's free public API (no key needed)
+  # Focused on the NY Knicks (NBA) and NY Giants (NFL). Soccer disabled.
   sports:
-    competitions:
-      - "WC"   # FIFA World Cup
-      - "CL"   # Champions League
-      - "PL"   # Premier League
-      - "PD"   # La Liga
-      - "BL1"  # Bundesliga
-      - "SA"   # Serie A
-      - "FL1"  # Ligue 1
-      # MLS not available on football-data.org free tier — upgrade to add it
-    espn_leagues:   # NBA/NFL via ESPN's free public API (no key needed)
+    competitions: []   # soccer disabled (World Cup over)
+    espn_leagues:
       - "nba"
       - "nfl"
-    favorite_teams:
-      - "Inter Miami"
-    match_window_days: 2  # look ahead/behind for matches
-    standings_competitions:
-      - "WC"
-      - "PL"
+    favorite_teams:    # only show games involving these teams
+      - "Knicks"
+      - "Giants"
+    match_window_days: 7  # weekly brief — cover the week's games
+    standings_competitions: []   # soccer standings disabled
 
   # Category groups for filtered briefs (/brief azure, /brief markets, etc.)
   category_groups:
