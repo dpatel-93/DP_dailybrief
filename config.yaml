@@ -188,9 +188,10 @@ categories:
   # AI, COPILOT & AI SECURITY
   # ============================================================
   ai_copilot:
-    name: "AI & Copilot"
+    name: "AI Sector & Security"
     emoji: "\U0001f916"
     feeds:
+      # Copilot / Microsoft AI
       - url: "https://github.blog/changelog/label/copilot/feed/"
         name: "GitHub Copilot Changelog"
       - url: "https://github.blog/feed/"
@@ -201,6 +202,16 @@ categories:
         name: "Microsoft AI Blog"
       - url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=APIManagementBlog"
         name: "APIM / AI Gateway"
+      # Broad AI sector — models, capabilities, industry moves
+      - url: "https://venturebeat.com/category/ai/feed/"
+        name: "VentureBeat AI"
+      - url: "https://arstechnica.com/ai/feed/"
+        name: "Ars Technica AI"
+      # AI security incidents — breaches, model vulns, prompt injection, misuse
+      - url: "https://www.theregister.com/software/ai_ml/headlines.atom"
+        name: "The Register AI/ML"
+      - url: "https://www.darkreading.com/rss.xml"
+        name: "Dark Reading (AI security)"
 
   ai_industry:
     name: "AI Industry News"
