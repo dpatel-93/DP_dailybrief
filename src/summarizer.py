@@ -79,7 +79,7 @@ def summarizeDigest(
     if not apiKey:
         raise ValueError("GROQ_API_KEY environment variable is required")
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
     articleText = buildPrompt(articlesByCategory, categoryConfigs)
 
     if not articleText.strip():
@@ -132,7 +132,7 @@ def summarizeWeekly(
     if not apiKey:
         raise ValueError("GROQ_API_KEY environment variable is required")
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
     articleText = buildPrompt(articlesByCategory, categoryConfigs)
 
     if not articleText.strip():
@@ -176,7 +176,7 @@ def summarizeMarkets(
     if not apiKey:
         raise ValueError("GROQ_API_KEY environment variable is required")
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
     articleText = buildPrompt(articlesByCategory, categoryConfigs)
 
     if not articleText.strip():
@@ -204,7 +204,7 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     if not apiKey:
         return _stripForSpeech(digest)
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
 
     response = client.chat.completions.create(
         model="groq/compound-mini",
@@ -282,7 +282,7 @@ def summarizeSports(sportsText: str, model: str = "groq/compound-mini") -> str:
     if not apiKey:
         return sportsText
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
 
     if not sportsText.strip() or sportsText.startswith("No upcoming"):
         return "No Knicks or Giants games this week. Off week! 🏀🏈😴"

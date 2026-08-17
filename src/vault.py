@@ -148,7 +148,7 @@ def createResearchNote(article: dict) -> str:
     # Try to fetch the full article content
     fullContent = _fetchArticleContent(article["link"])
 
-    client = Groq(api_key=apiKey)
+    client = Groq(api_key=apiKey, max_retries=5)
     prompt = f"""Research this article and create a comprehensive note:
 
 Title: {article['title']}
