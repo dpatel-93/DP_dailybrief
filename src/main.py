@@ -109,7 +109,7 @@ def runSports():
     # --- Step 2: AI Summarization ---
     print("\n[Step 2/4] Generating sports brief...")
     sportsText = buildSportsBriefText(matches, allStandings if allStandings else None)
-    model = settings.get("llm_model", "openai/gpt-oss-120b")
+    model = settings.get("llm_model", "groq/compound-mini")
     digest = summarizeSports(sportsText, model=model)
     print(f"  Brief length: {len(digest)} chars")
 
@@ -199,7 +199,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
 
     # --- Step 2: AI Summarization ---
     print(f"\n[Step 2/4] Generating AI summary ({mode} mode)...")
-    model = settings.get("llm_model", "openai/gpt-oss-120b")
+    model = settings.get("llm_model", "groq/compound-mini")
 
     if mode == "weekly":
         digest = summarizeWeekly(articlesByCategory, categories, model=model)

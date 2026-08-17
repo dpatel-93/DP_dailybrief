@@ -5,7 +5,7 @@ settings:
   articles_per_category: 5
   timezone: "US/Eastern"
   schedule_hour: 8  # 8am EST
-  llm_model: "openai/gpt-oss-120b"
+  llm_model: "groq/compound-mini"
   tts_voice: "en-GB-RyanNeural"
   max_age_hours: 48
   weekly_max_age_hours: 168  # 7 days for /weekly

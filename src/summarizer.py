@@ -28,7 +28,9 @@ def buildPrompt(articlesByCategory: dict[str, list[Article]], categoryConfigs: d
     return "\n".join(sections)
 
 
-SYSTEM_PROMPT = """You are a concise news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure) who manages enterprise Azure environments and follows AI, security, and financial markets. Create a daily digest that is:
+SYSTEM_PROMPT = """Do not use web search, code execution, or any other tool — work only from the article text given to you below.
+
+You are a concise news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure) who manages enterprise Azure environments and follows AI, security, and financial markets. Create a daily digest that is:
 - Scannable: headlines first, then 1-sentence summaries
 - Actionable: tell me WHY each story matters to someone managing Azure infra
 - Grouped by category with clear section headers
@@ -70,7 +72,7 @@ CRITICAL RULES:
 def summarizeDigest(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "openai/gpt-oss-120b",
+    model: str = "groq/compound-mini",
 ) -> str:
     """Send articles to Groq and get back a formatted digest."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -99,7 +101,9 @@ def summarizeDigest(
     return response.choices[0].message.content
 
 
-WEEKLY_SYSTEM_PROMPT = """You are a weekly news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure). Create a WEEKLY digest that:
+WEEKLY_SYSTEM_PROMPT = """Do not use web search, code execution, or any other tool — work only from the article text given to you below.
+
+You are a weekly news briefing assistant for Dishi, a Cloud Infrastructure Engineer (8 years Azure). Create a WEEKLY digest that:
 - Covers the TOP stories from the entire week
 - Groups by theme, not chronology
 - Highlights patterns and trends across the week
@@ -121,7 +125,7 @@ Then sections for: Azure, AI, Security, Markets, News
 def summarizeWeekly(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "openai/gpt-oss-120b",
+    model: str = "groq/compound-mini",
 ) -> str:
     """Create a weekly summary from the week's articles."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -150,7 +154,9 @@ def summarizeWeekly(
     return response.choices[0].message.content
 
 
-MARKETS_SYSTEM_PROMPT = """You are a pre-market briefing assistant for a trader who follows futures, indices, commodities, and crypto. Create a QUICK pre-market brief that:
+MARKETS_SYSTEM_PROMPT = """Do not use web search, code execution, or any other tool — work only from the article text given to you below.
+
+You are a pre-market briefing assistant for a trader who follows futures, indices, commodities, and crypto. Create a QUICK pre-market brief that:
 - Opens with futures snapshot (S&P, Nasdaq, Dow, Russell)
 - Covers key movers and why
 - Notes any macro events today (Fed, earnings, data releases)
@@ -163,7 +169,7 @@ MARKETS_SYSTEM_PROMPT = """You are a pre-market briefing assistant for a trader 
 def summarizeMarkets(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "openai/gpt-oss-120b",
+    model: str = "groq/compound-mini",
 ) -> str:
     """Create a pre-market morning brief focused on markets only."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -201,11 +207,12 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     client = Groq(api_key=apiKey)
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="groq/compound-mini",
         messages=[
             {
                 "role": "system",
                 "content": (
+                    "Do not use web search, code execution, or any other tool — work only from the digest text given to you. "
                     "Convert this news digest into a spoken script for text-to-speech. "
                     "Rules: No emojis, no URLs, no markdown formatting, no special characters. "
                     "Use natural speech transitions like 'Moving on to...' or 'In AI news today...'. "
@@ -224,7 +231,9 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     return response.choices[0].message.content
 
 
-SPORTS_SYSTEM_PROMPT = """You are a sports briefing assistant covering soccer (World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A, Ligue 1 — especially Inter Miami), the NBA, and the NFL. Create a match day brief that:
+SPORTS_SYSTEM_PROMPT = """Do not use web search, code execution, or any other tool — work only from the match data given to you below.
+
+You are a sports briefing assistant covering soccer (World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A, Ligue 1 — especially Inter Miami), the NBA, and the NFL. Create a match day brief that:
 - Leads with LIVE games if any are in progress
 - Shows yesterday's/today's results with scorelines and notable moments
 - Lists upcoming games with the FULL DATE and EXACT start time in Eastern Time (ET) — always include the day of week and date (e.g., "Thu Jun 11, 3:00 PM ET"), never just the time
@@ -267,7 +276,7 @@ RULES:
 - Use country flags for soccer where possible (🇺🇸 🇧🇷 🇦🇷 🇫🇷 🇩🇪 🇪🇸 🏴󠁧󠁢󠁥󠁮󠁧󠁿 etc.)"""
 
 
-def summarizeSports(sportsText: str, model: str = "openai/gpt-oss-120b") -> str:
+def summarizeSports(sportsText: str, model: str = "groq/compound-mini") -> str:
     """Create an AI-summarized sports brief from match data."""
     apiKey = os.environ.get("GROQ_API_KEY")
     if not apiKey:

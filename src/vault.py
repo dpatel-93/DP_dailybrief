@@ -168,9 +168,9 @@ Create a research note with these sections:
 Be specific and actionable. No fluff."""
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="groq/compound-mini",
         messages=[
-            {"role": "system", "content": "You are a research assistant for a Cloud Infrastructure Engineer. Write concise, actionable research notes."},
+            {"role": "system", "content": "Do not use web search or code execution tools — work only from the article content already given to you below. You are a research assistant for a Cloud Infrastructure Engineer. Write concise, actionable research notes."},
             {"role": "user", "content": prompt},
         ],
         temperature=0.3,
