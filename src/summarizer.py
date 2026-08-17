@@ -1,8 +1,32 @@
 """AI summarizer — uses Groq (free tier) to create a concise daily brief."""
 
 import os
-from groq import Groq
+import re
+import time
+from groq import Groq, RateLimitError
 from src.feed_parser import Article
+
+
+def createCompletion(client: Groq, **kwargs):
+    """chat.completions.create with a real sleep on rate limits.
+
+    Measured, not assumed: the SDK's own automatic retry (even raised to
+    max_retries=5) let three straight runs fail on the exact same 429 in
+    under two seconds total — it isn't waiting out Groq's suggested cooldown
+    for this error shape (compound's shared llama-3.3-70b-versatile TPM pool,
+    `"type": "compound"`). This parses the "try again in Xs" Groq actually
+    hands back and sleeps that long for real, once, before retrying.
+    """
+    try:
+        return client.chat.completions.create(**kwargs)
+    except RateLimitError as e:
+        wait = 10.0
+        m = re.search(r"try again in ([\d.]+)s", str(e))
+        if m:
+            wait = float(m.group(1)) + 1.0
+        print(f"  [RATE LIMIT] Waiting {wait:.1f}s before retrying...")
+        time.sleep(wait)
+        return client.chat.completions.create(**kwargs)
 
 
 def buildPrompt(articlesByCategory: dict[str, list[Article]], categoryConfigs: dict) -> str:
@@ -85,7 +109,7 @@ def summarizeDigest(
     if not articleText.strip():
         return "No new articles found in the last 24 hours. Quiet day!"
 
-    response = client.chat.completions.create(
+    response = createCompletion(client,
         model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -138,7 +162,7 @@ def summarizeWeekly(
     if not articleText.strip():
         return "Quiet week — no notable articles found."
 
-    response = client.chat.completions.create(
+    response = createCompletion(client,
         model=model,
         messages=[
             {"role": "system", "content": WEEKLY_SYSTEM_PROMPT},
@@ -182,7 +206,7 @@ def summarizeMarkets(
     if not articleText.strip():
         return "No market news available right now."
 
-    response = client.chat.completions.create(
+    response = createCompletion(client,
         model=model,
         messages=[
             {"role": "system", "content": MARKETS_SYSTEM_PROMPT},
@@ -206,7 +230,7 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
 
     client = Groq(api_key=apiKey, max_retries=5)
 
-    response = client.chat.completions.create(
+    response = createCompletion(client,
         model="groq/compound-mini",
         messages=[
             {
@@ -287,7 +311,7 @@ def summarizeSports(sportsText: str, model: str = "groq/compound-mini") -> str:
     if not sportsText.strip() or sportsText.startswith("No upcoming"):
         return "No Knicks or Giants games this week. Off week! 🏀🏈😴"
 
-    response = client.chat.completions.create(
+    response = createCompletion(client,
         model=model,
         messages=[
             {"role": "system", "content": SPORTS_SYSTEM_PROMPT},
