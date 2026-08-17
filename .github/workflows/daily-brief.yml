@@ -18,6 +18,8 @@ jobs:
   daily-brief:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -39,3 +41,16 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GH_TOKEN: ${{ secrets.VAULT_PAT }}
         run: python -m src.main
+
+      # Commits output/latest-brief.json back to this repo so Alfred's HUD can
+      # read the finished brief text via the GitHub API — Telegram was the only
+      # place it existed before this. Uses the job's own GITHUB_TOKEN (contents:
+      # write above), not VAULT_PAT, since it only ever writes to this repo.
+      - name: Commit brief output
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/latest-brief.json
+          git diff --cached --quiet || git commit -m "Update latest brief output [skip ci]"
+          git push

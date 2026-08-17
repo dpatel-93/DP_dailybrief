@@ -16,7 +16,7 @@ from src.summarizer import summarizeDigest, summarizeWeekly, summarizeMarkets, s
 from src.sports import fetchMatches, fetchStandings, fetchEspnGames, buildSportsBriefText
 from src.tts import generateAudio
 from src.telegram import sendMessage, sendAudio
-from src.vault import saveDigestArticles
+from src.vault import saveDigestArticles, saveLatestBrief
 
 
 def loadConfig(configPath: str = None) -> dict:
@@ -109,7 +109,7 @@ def runSports():
     # --- Step 2: AI Summarization ---
     print("\n[Step 2/4] Generating sports brief...")
     sportsText = buildSportsBriefText(matches, allStandings if allStandings else None)
-    model = settings.get("llm_model", "llama-3.3-70b-versatile")
+    model = settings.get("llm_model", "openai/gpt-oss-120b")
     digest = summarizeSports(sportsText, model=model)
     print(f"  Brief length: {len(digest)} chars")
 
@@ -190,6 +190,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
     if totalArticles == 0:
         print("\nNo articles found. Sending a 'quiet day' message.")
         sendMessage("No new updates found for this request. \U0001f60e")
+        saveLatestBrief("No new updates found today.", mode, 0)
         return
 
     # --- Save article index (for /save and /research commands) ---
@@ -198,7 +199,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
 
     # --- Step 2: AI Summarization ---
     print(f"\n[Step 2/4] Generating AI summary ({mode} mode)...")
-    model = settings.get("llm_model", "llama-3.3-70b-versatile")
+    model = settings.get("llm_model", "openai/gpt-oss-120b")
 
     if mode == "weekly":
         digest = summarizeWeekly(articlesByCategory, categories, model=model)
@@ -208,6 +209,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
         digest = summarizeDigest(articlesByCategory, categories, model=model)
 
     print(f"  Digest length: {len(digest)} chars")
+    saveLatestBrief(digest, mode, totalArticles)
 
     # --- Step 3: Text-to-Speech ---
     print("\n[Step 3/4] Generating audio...")

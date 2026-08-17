@@ -10,6 +10,7 @@ VAULT_REPO = "dpatel-93/DP_Obsidian_Vault"
 VAULT_FOLDER = "DailyUpdates"  # Notes go to DailyUpdates/ folder in the vault
 DIGEST_FILE = "data/last_digest.json"
 QUEUE_FILE = "data/queue.json"
+LATEST_BRIEF_FILE = "output/latest-brief.json"
 
 
 # --- Digest Storage ---
@@ -36,6 +37,25 @@ def saveQueue(queue: list[dict]):
     os.makedirs(os.path.dirname(queuePath), exist_ok=True)
     with open(queuePath, "w", encoding="utf-8") as f:
         json.dump(queue, f, indent=2)
+
+
+def saveLatestBrief(digest: str, mode: str, articleCount: int):
+    """Persist the finished brief text to a file the workflow commits back to
+    this repo, so something outside Telegram (Alfred's HUD) can read the
+    actual brief content via the GitHub contents API instead of just knowing
+    whether the run succeeded."""
+    briefPath = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        LATEST_BRIEF_FILE,
+    )
+    os.makedirs(os.path.dirname(briefPath), exist_ok=True)
+    with open(briefPath, "w", encoding="utf-8") as f:
+        json.dump({
+            "date": datetime.now().isoformat(),
+            "mode": mode,
+            "articleCount": articleCount,
+            "digest": digest,
+        }, f, indent=2)
 
 
 def saveDigestArticles(articlesByCategory: dict, categoryConfigs: dict):
@@ -148,7 +168,7 @@ Create a research note with these sections:
 Be specific and actionable. No fluff."""
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[
             {"role": "system", "content": "You are a research assistant for a Cloud Infrastructure Engineer. Write concise, actionable research notes."},
             {"role": "user", "content": prompt},

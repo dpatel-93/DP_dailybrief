@@ -70,7 +70,7 @@ CRITICAL RULES:
 def summarizeDigest(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "llama-3.3-70b-versatile",
+    model: str = "openai/gpt-oss-120b",
 ) -> str:
     """Send articles to Groq and get back a formatted digest."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -121,7 +121,7 @@ Then sections for: Azure, AI, Security, Markets, News
 def summarizeWeekly(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "llama-3.3-70b-versatile",
+    model: str = "openai/gpt-oss-120b",
 ) -> str:
     """Create a weekly summary from the week's articles."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -163,7 +163,7 @@ MARKETS_SYSTEM_PROMPT = """You are a pre-market briefing assistant for a trader 
 def summarizeMarkets(
     articlesByCategory: dict[str, list[Article]],
     categoryConfigs: dict,
-    model: str = "llama-3.3-70b-versatile",
+    model: str = "openai/gpt-oss-120b",
 ) -> str:
     """Create a pre-market morning brief focused on markets only."""
     apiKey = os.environ.get("GROQ_API_KEY")
@@ -201,7 +201,7 @@ def makeSpokenVersion(digest: str, categoryConfigs: dict) -> str:
     client = Groq(api_key=apiKey)
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[
             {
                 "role": "system",
@@ -267,7 +267,7 @@ RULES:
 - Use country flags for soccer where possible (🇺🇸 🇧🇷 🇦🇷 🇫🇷 🇩🇪 🇪🇸 🏴󠁧󠁢󠁥󠁮󠁧󠁿 etc.)"""
 
 
-def summarizeSports(sportsText: str, model: str = "llama-3.3-70b-versatile") -> str:
+def summarizeSports(sportsText: str, model: str = "openai/gpt-oss-120b") -> str:
     """Create an AI-summarized sports brief from match data."""
     apiKey = os.environ.get("GROQ_API_KEY")
     if not apiKey:
