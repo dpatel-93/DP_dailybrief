@@ -190,7 +190,7 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
     if totalArticles == 0:
         print("\nNo articles found. Sending a 'quiet day' message.")
         sendMessage("No new updates found for this request. \U0001f60e")
-        saveLatestBrief("No new updates found today.", mode, 0)
+        saveLatestBrief("No new updates found today.", mode, 0, "No new updates found today.")
         return
 
     # --- Save article index (for /save and /research commands) ---
@@ -209,12 +209,12 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
         digest = summarizeDigest(articlesByCategory, categories, model=model)
 
     print(f"  Digest length: {len(digest)} chars")
-    saveLatestBrief(digest, mode, totalArticles)
 
     # --- Step 3: Text-to-Speech ---
     print("\n[Step 3/4] Generating audio...")
     voice = settings.get("tts_voice", "en-US-GuyNeural")
     spokenText = makeSpokenVersion(digest, categories)
+    saveLatestBrief(digest, mode, totalArticles, spokenText)
     audioPath = generateAudio(spokenText, voice=voice)
 
     # --- Step 4: Deliver via Telegram ---

@@ -40,11 +40,13 @@ def saveQueue(queue: list[dict]):
         json.dump(queue, f, indent=2)
 
 
-def saveLatestBrief(digest: str, mode: str, articleCount: int):
+def saveLatestBrief(digest: str, mode: str, articleCount: int, spokenText: str = None):
     """Persist the finished brief text to a file the workflow commits back to
     this repo, so something outside Telegram (Alfred's HUD) can read the
     actual brief content via the GitHub contents API instead of just knowing
-    whether the run succeeded."""
+    whether the run succeeded. spokenText is the same TTS-clean text already
+    generated for the Telegram audio version — reused so a caller doesn't
+    have to re-strip markdown/links/emojis itself."""
     briefPath = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         LATEST_BRIEF_FILE,
@@ -56,6 +58,7 @@ def saveLatestBrief(digest: str, mode: str, articleCount: int):
             "mode": mode,
             "articleCount": articleCount,
             "digest": digest,
+            "spokenText": spokenText if spokenText is not None else digest,
         }, f, indent=2)
 
 
