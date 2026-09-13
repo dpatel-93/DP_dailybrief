@@ -1,7 +1,11 @@
 """DailyUpdates — main orchestrator.
 
-Pipeline: Fetch RSS → AI Summarize → TTS Audio → Deliver via Telegram
+Pipeline: Fetch RSS → AI Summarize → TTS Audio → Deliver
 Supports: full brief, filtered brief, weekly summary, market brief
+Daily mode delivers via the Alfred HUD only (saveLatestBrief() + the
+workflow's own commit-back-to-repo step) — weekly/markets still go to
+Telegram, since only the daily workflow commits output/latest-brief.json
+back to the repo for the HUD to read.
 """
 
 import os
@@ -188,9 +192,12 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
 
     totalArticles = sum(len(a) for a in articlesByCategory.values())
     if totalArticles == 0:
-        print("\nNo articles found. Sending a 'quiet day' message.")
-        sendMessage("No new updates found for this request. \U0001f60e")
         saveLatestBrief("No new updates found today.", mode, 0, "No new updates found today.")
+        if mode != "daily":
+            print("\nNo articles found. Sending a 'quiet day' message.")
+            sendMessage("No new updates found for this request. \U0001f60e")
+        else:
+            print("\nNo articles found — the HUD will show a 'quiet day' brief.")
         return
 
     # --- Save article index (for /save and /research commands) ---
@@ -217,7 +224,19 @@ def run(categoryFilter: list[str] = None, mode: str = "daily"):
     saveLatestBrief(digest, mode, totalArticles, spokenText)
     audioPath = generateAudio(spokenText, voice=voice)
 
-    # --- Step 4: Deliver via Telegram ---
+    # --- Step 4: Deliver ---
+    # Daily mode: the HUD already has it (saveLatestBrief() above, read back
+    # via the workflow's own commit-to-repo step) — no Telegram send. Weekly/
+    # markets still go to Telegram: only the daily workflow commits
+    # output/latest-brief.json back to the repo, so those two modes have no
+    # other delivery path yet.
+    if mode == "daily":
+        print("\n[Step 4/4] Delivered to the Alfred HUD (no Telegram send for daily briefs).")
+        print("\n" + "=" * 60)
+        print("Done!")
+        print("=" * 60)
+        return
+
     print("\n[Step 4/4] Sending to Telegram...")
 
     modeLabels = {
